@@ -1,0 +1,27 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
+}
+
+model Place {
+  id                String                       @id @default(uuid())
+  name              String
+  neighborhood      String
+  address           String
+  google_maps_url   String
+  photo_url         String?
+  editorial_summary String
+  vibe_tags         String[]
+  vibe_embedding    Unsupported("vector(1536)")?
+  sources           Json
+  verified          Boolean                      @default(true)
+  created_at        DateTime                     @default(now())
+
+  @@map("places")
+}
