@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { Bookmark } from "lucide-react";
 import { SearchBar } from "@/frontend/components/SearchBar";
 import { NeighborhoodFilter } from "@/frontend/components/NeighborhoodFilter";
 import { ResultsGrid, LoadingGrid } from "@/frontend/components/ResultsGrid";
 import { CoffeeCupIllustration } from "@/frontend/components/illustrations";
 import { cn } from "@/frontend/lib/cn";
+import { useSavedGemsCount } from "@/frontend/lib/savedGems";
 import type { SearchResult } from "@/shared/types";
 
 export default function Home() {
@@ -16,6 +18,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const savedCount = useSavedGemsCount();
 
   const handleSearch = async (query: string) => {
     const trimmedNeighborhood = neighborhood.trim();
@@ -57,6 +60,21 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-cream">
+      {/* Saved gems indicator */}
+      <div className="absolute top-4 right-4 z-10 sm:top-6 sm:right-6">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors duration-150",
+            savedCount > 0
+              ? "border-rust/40 bg-rust/10 text-rust"
+              : "border-stone-300 bg-white text-stone-500"
+          )}
+        >
+          <Bookmark className="h-3 w-3" fill={savedCount > 0 ? "currentColor" : "none"} />
+          {savedCount} saved
+        </span>
+      </div>
+
       {/* Hero / search section */}
       <section
         className={cn(
