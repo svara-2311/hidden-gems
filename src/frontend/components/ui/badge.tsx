@@ -8,10 +8,9 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "border-stone-700/50 bg-stone-800/70 text-stone-400 hover:bg-stone-700/70",
-        amber:
-          "border-amber-800/50 bg-amber-900/30 text-amber-300 hover:bg-amber-900/50",
-        outline: "border-stone-700 text-stone-500 bg-transparent",
+          "border-stone-300 bg-white text-stone-600 hover:border-stone-900 hover:text-stone-900",
+        rust: "border-rust/40 bg-rust/10 text-rust",
+        outline: "border-stone-300 text-stone-500 bg-transparent",
       },
     },
     defaultVariants: {

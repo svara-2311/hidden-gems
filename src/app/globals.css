@@ -6,7 +6,7 @@
   *,
   *::before,
   *::after {
-    border-color: theme("colors.stone.800");
+    border-color: theme("colors.stone.200");
   }
 
   html {
@@ -16,8 +16,8 @@
   }
 
   ::selection {
-    background-color: theme("colors.amber.900");
-    color: theme("colors.amber.100");
+    background-color: theme("colors.stone.900");
+    color: theme("colors.cream");
   }
 
   ::-webkit-scrollbar {
@@ -29,7 +29,7 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: theme("colors.stone.700");
+    background: theme("colors.stone.300");
     border-radius: 99px;
   }
 }
@@ -44,7 +44,7 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      theme("colors.stone.700 / 30%") 50%,
+      theme("colors.stone.200 / 80%") 50%,
       transparent 100%
     );
     background-size: 1000px 100%;

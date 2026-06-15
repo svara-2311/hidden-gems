@@ -38,18 +38,17 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
       {/* Main input */}
       <div
         className={cn(
-          "relative rounded-2xl border transition-all duration-300",
-          "bg-stone-900/80 backdrop-blur-sm",
+          "relative rounded-2xl border-2 bg-white transition-all duration-300",
           focused || value
-            ? "border-amber-600/60 shadow-xl shadow-amber-950/30 ring-1 ring-amber-600/20"
-            : "border-stone-700/40 shadow-lg shadow-black/20",
+            ? "border-stone-950 shadow-[4px_4px_0_0_rgba(28,25,23,1)]"
+            : "border-stone-300",
           isLoading && "opacity-70 pointer-events-none"
         )}
       >
         <Search
           className={cn(
             "absolute left-4 top-4 h-5 w-5 transition-colors duration-200",
-            focused || value ? "text-amber-500" : "text-stone-600"
+            focused || value ? "text-stone-950" : "text-stone-400"
           )}
         />
         <textarea
@@ -65,7 +64,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
           className={cn(
             "w-full resize-none bg-transparent",
             "pl-12 pr-14 pt-4 pb-4",
-            "text-stone-100 placeholder:text-stone-600",
+            "text-stone-950 placeholder:text-stone-400",
             "focus:outline-none text-base leading-relaxed font-sans"
           )}
         />
@@ -77,8 +76,8 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
             "absolute right-3 top-3 flex h-10 w-10 items-center justify-center",
             "rounded-xl transition-all duration-200",
             value.trim() && !isLoading
-              ? "bg-amber-600 text-white hover:bg-amber-500 shadow-lg shadow-amber-900/40 active:scale-90"
-              : "bg-stone-800 text-stone-600"
+              ? "bg-stone-950 text-cream hover:bg-stone-800 active:scale-90"
+              : "bg-stone-100 text-stone-400"
           )}
         >
           {isLoading ? (
@@ -99,9 +98,9 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
               textareaRef.current?.focus();
             }}
             className={cn(
-              "rounded-full border border-stone-800 bg-stone-900/40 px-3 py-1",
-              "text-xs text-stone-600 hover:border-stone-700 hover:text-stone-400",
-              "transition-all duration-150 hover:bg-stone-800/60"
+              "rounded-full border border-stone-300 bg-white px-3 py-1",
+              "text-xs text-stone-600 hover:border-stone-950 hover:text-stone-950",
+              "transition-all duration-150"
             )}
           >
             {vibe}
