@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { SearchBar } from "@/components/SearchBar";
-import { ResultsGrid, LoadingGrid } from "@/components/ResultsGrid";
-import { cn } from "@/lib/cn";
-import type { SearchResult } from "@/types";
+import { SearchBar } from "@/frontend/components/SearchBar";
+import { ResultsGrid, LoadingGrid } from "@/frontend/components/ResultsGrid";
+import { cn } from "@/frontend/lib/cn";
+import type { SearchResult } from "@/shared/types";
 
 // Subtle dot-grid background
 const DOT_GRID = `radial-gradient(circle, rgb(68 64 60 / 0.4) 1px, transparent 1px)`;

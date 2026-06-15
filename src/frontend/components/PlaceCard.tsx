@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import { MapPin, ExternalLink } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/cn";
-import type { SearchResult } from "@/types";
+import { Badge } from "@/frontend/components/ui/badge";
+import { cn } from "@/frontend/lib/cn";
+import type { SearchResult } from "@/shared/types";
 
 // Rotating gradient palettes for photo placeholders
 const GRADIENTS = [
@@ -53,10 +53,7 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
           />
         ) : (
           <div
-            className={cn(
-              "h-full w-full bg-gradient-to-br",
-              gradient
-            )}
+            className={cn("h-full w-full bg-gradient-to-br", gradient)}
             style={{ backgroundImage: `${GRAIN_BG}` }}
           />
         )}

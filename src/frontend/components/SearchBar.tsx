@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { Search, ArrowRight, Loader2 } from "lucide-react";
-import { cn } from "@/lib/cn";
+import { cn } from "@/frontend/lib/cn";
 
 const EXAMPLE_VIBES = [
   "quiet corner, good espresso, no music",

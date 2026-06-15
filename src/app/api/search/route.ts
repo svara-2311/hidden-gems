@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { getEmbedding } from "@/lib/openai";
-import { generateMatchBlurb } from "@/lib/anthropic";
-import type { RawPlace, SearchResult, Source } from "@/types";
+import { prisma } from "@/backend/lib/prisma";
+import { getEmbedding } from "@/backend/lib/openai";
+import { generateMatchBlurb } from "@/backend/lib/groq";
+import type { RawPlace, SearchResult, Source } from "@/shared/types";
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     // Generate match blurbs in parallel, with per-result fallback
     const results: SearchResult[] = await Promise.all(
-      rawResults.map(async (place, i) => {
+      rawResults.map(async (place) => {
         let match_blurb: string;
         try {
           match_blurb = await generateMatchBlurb({
