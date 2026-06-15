@@ -7,19 +7,27 @@ import type { RawPlace, SearchResult, Source } from "@/shared/types";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { query } = body as { query?: string };
+    const { query, neighborhood } = body as { query?: string; neighborhood?: string };
 
     if (!query?.trim()) {
       return NextResponse.json({ error: "Query is required" }, { status: 400 });
     }
 
     const trimmedQuery = query.trim();
+    const trimmedNeighborhood = neighborhood?.trim();
 
     // Embed the query
     const embedding = await getEmbedding(trimmedQuery);
     const embeddingStr = `[${embedding.join(",")}]`;
 
-    // pgvector cosine similarity search
+    // pgvector cosine similarity search, optionally scoped to a neighborhood
+    const params: unknown[] = [embeddingStr];
+    let neighborhoodFilter = "";
+    if (trimmedNeighborhood) {
+      params.push(`%${trimmedNeighborhood}%`);
+      neighborhoodFilter = `AND neighborhood ILIKE $${params.length}`;
+    }
+
     const rawResults = await prisma.$queryRawUnsafe<RawPlace[]>(
       `SELECT
         id, name, neighborhood, address, google_maps_url, photo_url,
@@ -27,9 +35,10 @@ export async function POST(req: NextRequest) {
         1 - (vibe_embedding <=> $1::vector) AS similarity
       FROM places
       WHERE verified = true AND vibe_embedding IS NOT NULL
+      ${neighborhoodFilter}
       ORDER BY vibe_embedding <=> $1::vector
       LIMIT 6`,
-      embeddingStr
+      ...params
     );
 
     // Generate match blurbs in parallel, with per-result fallback
