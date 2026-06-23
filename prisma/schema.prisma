@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
@@ -11,13 +14,22 @@ datasource db {
 
 model Place {
   id                String                       @id @default(uuid())
+  osm_id            BigInt?
   name              String
   neighborhood      String
+  city              String?                      // Normalized city name
+  region            String                       // "SF" or "Bay Area"
   address           String
+  latitude          Float?
+  longitude         Float?
+  website           String?
+  opening_hours     String?
   google_maps_url   String
   photo_url         String?
   editorial_summary String
   vibe_tags         String[]
+  specialties       String[]                     // ["cold brew", "flat white", "pastries"]
+  famous_for        String                       // "Known for hand-pulled espresso shots"
   vibe_embedding    Unsupported("vector(1536)")?
   sources           Json
   verified          Boolean                      @default(true)
