@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Bookmark } from "lucide-react";
+import Link from "next/link";
+import { Bookmark, Map } from "lucide-react";
 import { SearchBar } from "@/frontend/components/SearchBar";
 import { NeighborhoodFilter } from "@/frontend/components/NeighborhoodFilter";
 import { ResultsGrid, LoadingGrid } from "@/frontend/components/ResultsGrid";
@@ -60,8 +61,15 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen overflow-x-hidden bg-cream">
-      {/* Saved gems indicator */}
-      <div className="absolute top-4 right-4 z-10 sm:top-6 sm:right-6">
+      {/* Top-right nav */}
+      <div className="absolute top-4 right-4 z-10 sm:top-6 sm:right-6 flex items-center gap-2">
+        <Link
+          href="/map"
+          className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-stone-500 transition-colors duration-150 hover:border-stone-950 hover:text-stone-950"
+        >
+          <Map className="h-3 w-3" />
+          Map
+        </Link>
         <span
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors duration-150",

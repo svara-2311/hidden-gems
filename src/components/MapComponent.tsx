@@ -43,7 +43,7 @@ export function MapComponent({ places, selectedPlace }: MapComponentProps) {
   const validPlaces = places.filter((p) => p.latitude && p.longitude);
 
   return (
-    <div className="w-full h-full rounded-lg border border-stone-700 overflow-hidden bg-stone-900 flex flex-col">
+    <div className="relative w-full h-full rounded-xl border border-stone-200 overflow-hidden bg-cream flex flex-col">
       <iframe
         width="100%"
         height="100%"
@@ -53,24 +53,24 @@ export function MapComponent({ places, selectedPlace }: MapComponentProps) {
         className="flex-1"
       />
 
-      <div className="absolute top-4 left-4 bg-stone-900/90 border border-stone-700 rounded-lg p-3 max-w-xs max-h-32 overflow-y-auto text-xs space-y-1 pointer-events-none">
-        <p className="font-semibold text-amber-400">{validPlaces.length} on map</p>
-        <div className="space-y-0.5 text-stone-300">
+      <div className="absolute top-4 left-4 bg-white/90 border border-stone-200 rounded-lg p-3 max-w-xs max-h-32 overflow-y-auto text-xs space-y-1 pointer-events-none shadow-sm">
+        <p className="font-bold text-stone-950">{validPlaces.length} on map</p>
+        <div className="space-y-0.5 text-stone-600">
           {validPlaces.slice(0, 5).map((place) => (
             <div
               key={place.id}
-              className={`truncate ${selectedPlace === place.id ? "text-amber-400 font-semibold" : ""}`}
+              className={`truncate ${selectedPlace === place.id ? "text-rust font-semibold" : ""}`}
             >
               • {place.name}
             </div>
           ))}
           {validPlaces.length > 5 && (
-            <div className="text-stone-500">+{validPlaces.length - 5} more</div>
+            <div className="text-stone-400">+{validPlaces.length - 5} more</div>
           )}
         </div>
       </div>
 
-      <div className="absolute bottom-0 right-0 bg-stone-900/90 text-stone-400 text-[10px] px-2 py-1">
+      <div className="absolute bottom-0 right-0 bg-cream/90 text-stone-400 text-[10px] px-2 py-1">
         © OpenStreetMap contributors
       </div>
     </div>
