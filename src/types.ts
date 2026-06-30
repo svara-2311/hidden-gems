@@ -29,11 +29,16 @@ export interface Place {
 export interface SearchResult extends Place {
   match_blurb: string;
   similarity: number;
+  // Which of the user's selected vibe/drink preferences this place actually has.
+  matched_vibes?: string[];
+  matched_drinks?: string[];
 }
 
 export interface SearchResponse {
   results: SearchResult[];
   query: string;
+  // Set when an area filter was broadened (e.g. to its region) to avoid no results.
+  expandedArea?: string | null;
 }
 
 // Shape returned by $queryRawUnsafe — sources and vibe_tags need casting

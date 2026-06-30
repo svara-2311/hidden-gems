@@ -49,6 +49,14 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
   const openInMaps = () =>
     window.open(place.google_maps_url, "_blank", "noopener,noreferrer");
 
+  // Surface matched preferences first so the highlighted ones stay visible
+  // within the truncated tag row.
+  const matchedVibes = new Set(place.matched_vibes ?? []);
+  const matchedDrinks = place.matched_drinks ?? [];
+  const vibeTags = [...place.vibe_tags].sort(
+    (a, b) => Number(matchedVibes.has(b)) - Number(matchedVibes.has(a))
+  );
+
   return (
     <article
       onClick={openInMaps}
@@ -115,11 +123,18 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
           {place.match_blurb}
         </p>
 
-        {/* Vibe tags */}
-        {place.vibe_tags.length > 0 && (
+        {/* Vibe tags (matched ones highlighted) + matched drinks */}
+        {(vibeTags.length > 0 || matchedDrinks.length > 0) && (
           <div className="flex flex-wrap gap-1.5">
-            {place.vibe_tags.slice(0, 5).map((tag) => (
-              <Badge key={tag}>#{tag}</Badge>
+            {vibeTags.slice(0, 5).map((tag) => (
+              <Badge key={tag} highlight={matchedVibes.has(tag)}>
+                #{tag}
+              </Badge>
+            ))}
+            {matchedDrinks.map((drink) => (
+              <Badge key={`drink-${drink}`} highlight>
+                ☕ {drink}
+              </Badge>
             ))}
           </div>
         )}
