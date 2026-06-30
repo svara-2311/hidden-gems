@@ -3,38 +3,57 @@
 import { useState, useRef } from "react";
 import Link from "next/link";
 import { Bookmark, Map } from "lucide-react";
-import { SearchBar } from "@/frontend/components/SearchBar";
-import { NeighborhoodFilter } from "@/frontend/components/NeighborhoodFilter";
-import { ResultsGrid, LoadingGrid } from "@/frontend/components/ResultsGrid";
-import { CoffeeCupIllustration } from "@/frontend/components/illustrations";
-import { cn } from "@/frontend/lib/cn";
-import { useSavedGemsCount } from "@/frontend/lib/savedGems";
-import type { SearchResult } from "@/shared/types";
+import { SearchBar } from "@/components/SearchBar";
+import { FilterPanel, type Filters } from "@/components/FilterPanel";
+import { ResultsGrid, LoadingGrid } from "@/components/ResultsGrid";
+import { CoffeeCupIllustration } from "@/components/illustrations";
+import { cn } from "@/lib/cn";
+import { useSavedGemsCount } from "@/lib/savedGems";
+import type { SearchResult } from "@/types";
+
+const EMPTY_FILTERS: Filters = { areas: [], vibes: [], drinks: [] };
+
+// A short human label for a filter-only search (shown as the results heading).
+function describeFilters(filters: Filters): string {
+  const parts = [...filters.vibes, ...filters.drinks, ...filters.areas];
+  return parts.length ? parts.join(" · ") : "your filters";
+}
 
 export default function Home() {
   const [results, setResults] = useState<SearchResult[] | null>(null);
+  const [query, setQuery] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
-  const [neighborhood, setNeighborhood] = useState("");
-  const [activeNeighborhood, setActiveNeighborhood] = useState("");
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const savedCount = useSavedGemsCount();
 
-  const handleSearch = async (query: string) => {
-    const trimmedNeighborhood = neighborhood.trim();
+  const handleSearch = async () => {
+    const trimmedQuery = query.trim();
+    const hasFilters =
+      filters.areas.length > 0 || filters.vibes.length > 0 || filters.drinks.length > 0;
+
+    if (!trimmedQuery && !hasFilters) {
+      setError("Enter a search or pick at least one filter.");
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
-    setActiveQuery(query);
-    setActiveNeighborhood(trimmedNeighborhood);
+    setActiveQuery(trimmedQuery || describeFilters(filters));
     setResults(null);
 
     try {
       const res = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, neighborhood: trimmedNeighborhood || undefined }),
+        body: JSON.stringify({
+          query: trimmedQuery || undefined,
+          areas: filters.areas,
+          vibes: filters.vibes,
+          drinks: filters.drinks,
+        }),
       });
 
       const data = await res.json();
@@ -120,13 +139,19 @@ export default function Home() {
           )}
         </div>
 
-        <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+        <SearchBar
+          value={query}
+          onChange={setQuery}
+          onSearch={handleSearch}
+          isLoading={isLoading}
+        />
 
         <div className="mt-4 w-full">
-          <NeighborhoodFilter
-            value={neighborhood}
-            onChange={setNeighborhood}
-            disabled={isLoading}
+          <FilterPanel
+            filters={filters}
+            onChange={setFilters}
+            onSearch={handleSearch}
+            isLoading={isLoading}
           />
         </div>
       </section>
@@ -144,27 +169,13 @@ export default function Home() {
 
         {!isLoading && results !== null && results.length === 0 && (
           <div className="text-center py-20 animate-fade-in">
-            {activeNeighborhood ? (
-              <>
-                <p className="text-stone-700 text-lg font-serif font-bold">
-                  No gems found in {activeNeighborhood} yet — check back soon!
-                </p>
-                <p className="text-stone-500 text-sm mt-2">
-                  Try a different neighborhood, or clear the filter to search
-                  the whole Bay Area.
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-stone-700 text-lg font-serif font-bold">
-                  No gems found for this vibe.
-                </p>
-                <p className="text-stone-500 text-sm mt-2">
-                  Try rephrasing — be more specific about lighting, noise, or
-                  coffee type.
-                </p>
-              </>
-            )}
+            <p className="text-stone-700 text-lg font-serif font-bold">
+              No gems match that combination.
+            </p>
+            <p className="text-stone-500 text-sm mt-2">
+              Try loosening a filter — fewer areas, vibes, or drink types — or
+              rephrase your search.
+            </p>
           </div>
         )}
 

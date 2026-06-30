@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { SearchResult } from "@/shared/types";
+import type { SearchResult } from "@/types";
 
 interface MapComponentProps {
   places: SearchResult[];

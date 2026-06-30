@@ -1,7 +1,7 @@
 "use client";
 
-import { PlaceCard } from "@/frontend/components/PlaceCard";
-import type { SearchResult } from "@/shared/types";
+import { PlaceCard } from "@/components/PlaceCard";
+import type { SearchResult } from "@/types";
 
 // ── Skeleton card shown during loading ─────────────────────────────────────
 
