@@ -24,6 +24,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [expandedArea, setExpandedArea] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -43,6 +44,7 @@ export default function Home() {
     setError(null);
     setActiveQuery(trimmedQuery || describeFilters(filters));
     setResults(null);
+    setExpandedArea(null);
 
     try {
       const res = await fetch("/api/search", {
@@ -63,6 +65,7 @@ export default function Home() {
       }
 
       setResults(data.results);
+      setExpandedArea(data.expandedArea ?? null);
       // Scroll to results on mobile
       setTimeout(
         () => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
@@ -164,17 +167,24 @@ export default function Home() {
         {isLoading && <LoadingGrid />}
 
         {!isLoading && hasResults && (
-          <ResultsGrid results={results!} query={activeQuery} />
+          <>
+            {expandedArea && (
+              <p className="mb-5 text-center text-xs text-stone-500 animate-fade-in">
+                Not many matches in your area — showing the wider{" "}
+                <span className="font-semibold text-stone-700">{expandedArea}</span>.
+              </p>
+            )}
+            <ResultsGrid results={results!} query={activeQuery} />
+          </>
         )}
 
         {!isLoading && results !== null && results.length === 0 && (
           <div className="text-center py-20 animate-fade-in">
             <p className="text-stone-700 text-lg font-serif font-bold">
-              No gems match that combination.
+              No coffee shops found.
             </p>
             <p className="text-stone-500 text-sm mt-2">
-              Try loosening a filter — fewer areas, vibes, or drink types — or
-              rephrase your search.
+              Try a different search — or check that the database is seeded.
             </p>
           </div>
         )}

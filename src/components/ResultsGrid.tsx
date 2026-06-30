@@ -61,9 +61,7 @@ interface ResultsGridProps {
 export function ResultsGrid({ results, query }: ResultsGridProps) {
   return (
     <section className="w-full animate-fade-in">
-      <SectionLabel
-        label={`${results.length} gem${results.length !== 1 ? "s" : ""} for "${query}"`}
-      />
+      <SectionLabel label={query ? `Top picks for ${query}` : "Top picks"} />
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {results.map((place, i) => (
           <PlaceCard key={place.id} place={place} index={i} />

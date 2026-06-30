@@ -2,11 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getEmbedding } from "@/lib/openai";
 import { generateMatchBlurb } from "@/lib/groq";
-import { AREA_PATTERNS, VIBE_TAGS, DRINK_TYPES } from "@/taxonomy";
+import { AREA_GROUPS, AREA_PATTERNS, VIBE_TAGS, DRINK_TYPES } from "@/taxonomy";
 import type { RawPlace, SearchResult, Source } from "@/types";
 
 const VIBE_SET = new Set<string>(VIBE_TAGS);
 const DRINK_SET = new Set<string>(DRINK_TYPES);
+
+// How many rows to pull from pgvector before re-ranking down to the final page.
+const CANDIDATE_LIMIT = 30;
+const PAGE_SIZE = 12;
+// Below this many area-filtered results, broaden the area to its whole region.
+const MIN_AREA_RESULTS = 4;
+// Each matched vibe/drink nudges a result up without ever excluding others.
+const MATCH_BONUS = 0.04;
+
+const SELECT_COLUMNS = `
+  id, name, neighborhood, city, region, address,
+  latitude, longitude, website, opening_hours,
+  google_maps_url, photo_url, editorial_summary,
+  vibe_tags, specialties, famous_for, sources, verified, created_at`;
 
 function asStringArray(v: unknown): string[] {
   if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string");
@@ -14,97 +28,131 @@ function asStringArray(v: unknown): string[] {
   return [];
 }
 
-// Build a Postgres text[] array literal from already-trusted (vocab) values.
-function arrayLiteral(values: string[]): string {
-  return `{${values.map((v) => `"${v}"`).join(",")}}`;
+function asArray(v: unknown): string[] {
+  return Array.isArray(v) ? v : [];
+}
+
+// ILIKE patterns for the exact areas the user picked.
+function patternsForAreas(areas: string[]): string[] {
+  return areas.flatMap((a) => AREA_PATTERNS[a] ?? [a]);
+}
+
+// Broaden the selected areas to every area in the same region group(s) —
+// e.g. picking "Mission" broadens to all of San Francisco.
+function regionPatternsForAreas(areas: string[]): { patterns: string[]; regions: string[] } {
+  const groups = AREA_GROUPS.filter((g) => g.areas.some((a) => areas.includes(a.label)));
+  return {
+    patterns: groups.flatMap((g) => g.areas.flatMap((a) => a.patterns)),
+    regions: groups.map((g) => g.region),
+  };
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { query, neighborhood } = body as {
+    const body = (await req.json()) as {
       query?: string;
       neighborhood?: string;
+      areas?: unknown;
+      vibes?: unknown;
+      drinks?: unknown;
     };
 
-    const trimmedQuery = query?.trim() ?? "";
+    const trimmedQuery = body.query?.trim() ?? "";
 
-    // Filters. `areas` supersedes the legacy single `neighborhood` string.
-    const areas = asStringArray((body as { areas?: unknown }).areas);
-    if (neighborhood?.trim()) areas.push(neighborhood.trim());
-    const vibes = asStringArray((body as { vibes?: unknown }).vibes).filter((v) =>
-      VIBE_SET.has(v)
-    );
-    const drinks = asStringArray((body as { drinks?: unknown }).drinks).filter((d) =>
-      DRINK_SET.has(d)
-    );
+    // `areas` supersedes the legacy single `neighborhood` string.
+    const areas = asStringArray(body.areas);
+    if (body.neighborhood?.trim()) areas.push(body.neighborhood.trim());
+    const vibes = asStringArray(body.vibes).filter((v) => VIBE_SET.has(v));
+    const drinks = asStringArray(body.drinks).filter((d) => DRINK_SET.has(d));
 
-    const hasFilters = areas.length > 0 || vibes.length > 0 || drinks.length > 0;
-    if (!trimmedQuery && !hasFilters) {
+    if (!trimmedQuery && areas.length === 0 && vibes.length === 0 && drinks.length === 0) {
       return NextResponse.json(
-        { error: "Enter a search or pick at least one filter." },
+        { error: "Enter a search or pick at least one preference." },
         { status: 400 }
       );
     }
 
-    // Build WHERE clauses + parameters dynamically.
-    const params: unknown[] = [];
-    const where: string[] = ["verified = true", "vibe_embedding IS NOT NULL"];
+    // Vibe/drink preferences are ranking signals, not filters: fold them into
+    // the text we embed so semantic search naturally surfaces matching places.
+    const semanticText = [trimmedQuery, ...vibes, ...drinks].filter(Boolean).join(" ");
+    const embedding = semanticText ? await getEmbedding(semanticText) : null;
 
-    // Area filter: each selected area resolves to ILIKE patterns matched
-    // against BOTH neighborhood and city; areas are OR'd together.
-    if (areas.length > 0) {
-      const areaClauses: string[] = [];
-      for (const area of areas) {
-        const patterns = AREA_PATTERNS[area] ?? [area];
-        for (const p of patterns) {
+    // Run the candidate query with an optional area filter (area is the only
+    // hard constraint — everything else just ranks).
+    const fetchCandidates = async (areaPatterns: string[] | null): Promise<RawPlace[]> => {
+      const params: unknown[] = [];
+      const where = ["verified = true", "vibe_embedding IS NOT NULL"];
+
+      if (areaPatterns && areaPatterns.length > 0) {
+        const clauses = areaPatterns.map((p) => {
           params.push(`%${p}%`);
-          const idx = params.length;
-          areaClauses.push(`(neighborhood ILIKE $${idx} OR city ILIKE $${idx})`);
+          const i = params.length;
+          return `(neighborhood ILIKE $${i} OR city ILIKE $${i})`;
+        });
+        where.push(`(${clauses.join(" OR ")})`);
+      }
+
+      let similaritySelect = "1 AS similarity";
+      let orderBy = "ORDER BY created_at DESC";
+      if (embedding) {
+        params.push(`[${embedding.join(",")}]`);
+        const i = params.length;
+        similaritySelect = `1 - (vibe_embedding <=> $${i}::vector) AS similarity`;
+        orderBy = `ORDER BY vibe_embedding <=> $${i}::vector`;
+      }
+
+      return prisma.$queryRawUnsafe<RawPlace[]>(
+        `SELECT ${SELECT_COLUMNS}, ${similaritySelect}
+         FROM places
+         WHERE ${where.join(" AND ")}
+         ${orderBy}
+         LIMIT ${CANDIDATE_LIMIT}`,
+        ...params
+      );
+    };
+
+    // Area, with graceful broadening so we (almost) never return nothing.
+    let candidates: RawPlace[] = [];
+    let expandedArea: string | null = null;
+    if (areas.length > 0) {
+      candidates = await fetchCandidates(patternsForAreas(areas));
+      if (candidates.length < MIN_AREA_RESULTS) {
+        const { patterns, regions } = regionPatternsForAreas(areas);
+        const broadened = await fetchCandidates(patterns);
+        if (broadened.length > candidates.length) {
+          candidates = broadened;
+          expandedArea = regions.join(" & ");
         }
       }
-      if (areaClauses.length) where.push(`(${areaClauses.join(" OR ")})`);
+      if (candidates.length === 0) {
+        candidates = await fetchCandidates(null);
+        expandedArea = "the whole Bay Area";
+      }
+    } else {
+      candidates = await fetchCandidates(null);
     }
 
-    // Vibe / drink filters: array overlap (any selected value present).
-    if (vibes.length > 0) {
-      params.push(arrayLiteral(vibes));
-      where.push(`vibe_tags && $${params.length}::text[]`);
-    }
-    if (drinks.length > 0) {
-      params.push(arrayLiteral(drinks));
-      where.push(`specialties && $${params.length}::text[]`);
-    }
-
-    // Semantic ordering only when there's query text; otherwise newest first.
-    let similaritySelect = "1 AS similarity";
-    let orderBy = "ORDER BY created_at DESC";
-    if (trimmedQuery) {
-      const embedding = await getEmbedding(trimmedQuery);
-      params.push(`[${embedding.join(",")}]`);
-      const vecIdx = params.length;
-      similaritySelect = `1 - (vibe_embedding <=> $${vecIdx}::vector) AS similarity`;
-      orderBy = `ORDER BY vibe_embedding <=> $${vecIdx}::vector`;
-    }
-
-    const rawResults = await prisma.$queryRawUnsafe<RawPlace[]>(
-      `SELECT
-        id, name, neighborhood, city, region, address,
-        latitude, longitude, website, opening_hours,
-        google_maps_url, photo_url, editorial_summary,
-        vibe_tags, specialties, famous_for, sources, verified, created_at,
-        ${similaritySelect}
-      FROM places
-      WHERE ${where.join(" AND ")}
-      ${orderBy}
-      LIMIT 12`,
-      ...params
-    );
+    // Re-rank: semantic similarity + a small bonus per matched preference, so
+    // exact vibe/drink hits float up without filtering anything out.
+    const vibeSet = new Set(vibes);
+    const drinkSet = new Set(drinks);
+    const ranked = candidates
+      .map((place) => {
+        const vibe_tags = asArray(place.vibe_tags);
+        const specialties = asArray(place.specialties);
+        const matched_vibes = vibe_tags.filter((t) => vibeSet.has(t));
+        const matched_drinks = specialties.filter((s) => drinkSet.has(s));
+        const score =
+          Number(place.similarity) +
+          MATCH_BONUS * (matched_vibes.length + matched_drinks.length);
+        return { place, vibe_tags, specialties, matched_vibes, matched_drinks, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, PAGE_SIZE);
 
     const results: SearchResult[] = await Promise.all(
-      rawResults.map(async (place) => {
-        const vibe_tags = Array.isArray(place.vibe_tags) ? place.vibe_tags : [];
-        let match_blurb: string;
+      ranked.map(async ({ place, vibe_tags, specialties, matched_vibes, matched_drinks }) => {
+        let match_blurb = place.editorial_summary;
         if (trimmedQuery) {
           try {
             match_blurb = await generateMatchBlurb({
@@ -117,23 +165,22 @@ export async function POST(req: NextRequest) {
           } catch {
             match_blurb = `${place.name} made the list — worth checking out for this vibe.`;
           }
-        } else {
-          // Filter-only search: no per-result LLM call, use the editorial line.
-          match_blurb = place.editorial_summary;
         }
 
         return {
           ...place,
           vibe_tags,
-          specialties: Array.isArray(place.specialties) ? place.specialties : [],
+          specialties,
           sources: (place.sources as Source[]) ?? [],
           similarity: Number(place.similarity),
           match_blurb,
+          matched_vibes,
+          matched_drinks,
         };
       })
     );
 
-    return NextResponse.json({ results, query: trimmedQuery });
+    return NextResponse.json({ results, query: trimmedQuery, expandedArea });
   } catch (error) {
     console.error("[/api/search]", error);
     return NextResponse.json(
