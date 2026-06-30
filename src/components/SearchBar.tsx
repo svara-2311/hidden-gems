@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useRef, useCallback, useState } from "react";
 import { Search, ArrowRight, Loader2 } from "lucide-react";
-import { cn } from "@/frontend/lib/cn";
+import { cn } from "@/lib/cn";
 
 const EXAMPLE_VIBES = [
   "quiet corner, good espresso, no music",
@@ -12,19 +12,20 @@ const EXAMPLE_VIBES = [
 ];
 
 interface SearchBarProps {
-  onSearch: (query: string) => void;
+  value: string;
+  onChange: (value: string) => void;
+  onSearch: () => void;
   isLoading: boolean;
 }
 
-export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
-  const [value, setValue] = useState("");
+export function SearchBar({ value, onChange, onSearch, isLoading }: SearchBarProps) {
   const [focused, setFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = useCallback(() => {
-    if (!value.trim() || isLoading) return;
-    onSearch(value.trim());
-  }, [value, isLoading, onSearch]);
+    if (isLoading) return;
+    onSearch();
+  }, [isLoading, onSearch]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -54,7 +55,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
         <textarea
           ref={textareaRef}
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
@@ -70,7 +71,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
         />
         <button
           onClick={handleSubmit}
-          disabled={!value.trim() || isLoading}
+          disabled={isLoading}
           aria-label="Search"
           className={cn(
             "absolute right-3 top-3 flex h-10 w-10 items-center justify-center",
@@ -94,7 +95,7 @@ export function SearchBar({ onSearch, isLoading }: SearchBarProps) {
           <button
             key={i}
             onClick={() => {
-              setValue(vibe);
+              onChange(vibe);
               textareaRef.current?.focus();
             }}
             className={cn(

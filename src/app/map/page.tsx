@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin } from "lucide-react";
 import { MapComponent } from "@/components/MapComponent";
-import { CoffeeCupIllustration } from "@/frontend/components/illustrations";
-import { cn } from "@/frontend/lib/cn";
-import type { SearchResult } from "@/shared/types";
+import { CoffeeCupIllustration } from "@/components/illustrations";
+import { cn } from "@/lib/cn";
+import type { SearchResult } from "@/types";
 
 export default function MapPage() {
   const [allPlaces, setAllPlaces] = useState<SearchResult[]>([]);

@@ -6,7 +6,6 @@ export interface Source {
 
 export interface Place {
   id: string;
-  osm_id: number | null;
   name: string;
   neighborhood: string;
   city: string | null;
@@ -40,7 +39,6 @@ export interface SearchResponse {
 // Shape returned by $queryRawUnsafe — sources and vibe_tags need casting
 export interface RawPlace {
   id: string;
-  osm_id: bigint | null;
   name: string;
   neighborhood: string;
   city: string | null;

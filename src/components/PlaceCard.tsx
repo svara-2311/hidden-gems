@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { MapPin, ArrowUpRight, Bookmark, Share2 } from "lucide-react";
-import { Badge } from "@/frontend/components/ui/badge";
-import { PLACE_ILLUSTRATIONS } from "@/frontend/components/illustrations";
-import { cn } from "@/frontend/lib/cn";
-import { isGemSaved, toggleSavedGem } from "@/frontend/lib/savedGems";
-import type { SearchResult } from "@/shared/types";
+import { Badge } from "@/components/ui/badge";
+import { PLACE_ILLUSTRATIONS } from "@/components/illustrations";
+import { cn } from "@/lib/cn";
+import { isGemSaved, toggleSavedGem } from "@/lib/savedGems";
+import type { SearchResult } from "@/types";
 
 interface PlaceCardProps {
   place: SearchResult;
@@ -23,7 +23,8 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
     setIsSaved(isGemSaved(place.id));
   }, [place.id]);
 
-  const handleToggleSave = () => {
+  const handleToggleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsSaved(
       toggleSavedGem({
         id: place.id,
@@ -33,7 +34,8 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
     );
   };
 
-  const handleShare = async () => {
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     const text = `Found a hidden gem! ☕ ${place.name} — ${place.neighborhood} 📍 ${place.google_maps_url} #HiddenGems`;
     try {
       await navigator.clipboard.writeText(text);
@@ -44,13 +46,24 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
     }
   };
 
+  const openInMaps = () =>
+    window.open(place.google_maps_url, "_blank", "noopener,noreferrer");
+
   return (
     <article
+      onClick={openInMaps}
+      role="link"
+      tabIndex={0}
+      aria-label={`Open ${place.name} in Google Maps`}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") openInMaps();
+      }}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-2xl",
+        "group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl",
         "border border-stone-200 bg-white",
         "hover:border-stone-900 hover:-translate-y-1",
         "hover:shadow-[6px_6px_0_0_rgba(28,25,23,1)]",
+        "focus:outline-none focus-visible:border-stone-900 focus-visible:shadow-[6px_6px_0_0_rgba(28,25,23,1)]",
         "transition-all duration-300 ease-out",
         "animate-fade-up"
       )}
@@ -122,6 +135,7 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
             href={place.google_maps_url}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-stone-900 hover:text-rust transition-colors duration-150"
           >
             Open in Maps
