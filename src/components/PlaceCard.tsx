@@ -30,6 +30,8 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
         id: place.id,
         name: place.name,
         neighborhood: place.neighborhood,
+        vibe_tags: place.vibe_tags,
+        match_blurb: place.match_blurb,
       })
     );
   };

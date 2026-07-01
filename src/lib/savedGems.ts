@@ -7,6 +7,8 @@ export interface SavedGem {
   id: string;
   name: string;
   neighborhood: string;
+  vibe_tags?: string[];
+  match_blurb?: string;
 }
 
 function readSavedGems(): SavedGem[] {

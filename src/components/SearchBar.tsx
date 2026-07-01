@@ -4,13 +4,6 @@ import { useRef, useCallback, useState } from "react";
 import { Search, ArrowRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-const EXAMPLE_VIBES = [
-  "quiet corner, good espresso, no music",
-  "moody and dimly lit to read on a rainy morning",
-  "sunny patio with pour-over and reliable wifi",
-  "third-wave but not pretentious, meeting a client",
-];
-
 interface SearchBarProps {
   value: string;
   onChange: (value: string) => void;
@@ -89,25 +82,6 @@ export function SearchBar({ value, onChange, onSearch, isLoading }: SearchBarPro
         </button>
       </div>
 
-      {/* Example prompts */}
-      <div className="flex flex-wrap gap-2 justify-center">
-        {EXAMPLE_VIBES.map((vibe, i) => (
-          <button
-            key={i}
-            onClick={() => {
-              onChange(vibe);
-              textareaRef.current?.focus();
-            }}
-            className={cn(
-              "rounded-full border border-stone-300 bg-white px-3 py-1",
-              "text-xs text-stone-600 hover:border-stone-950 hover:text-stone-950",
-              "transition-all duration-150"
-            )}
-          >
-            {vibe}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }

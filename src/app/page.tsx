@@ -2,11 +2,12 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { Bookmark, Map } from "lucide-react";
+import { Bookmark } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
 import { FilterPanel, type Filters } from "@/components/FilterPanel";
 import { ResultsGrid, LoadingGrid } from "@/components/ResultsGrid";
 import { CoffeeCupIllustration } from "@/components/illustrations";
+import { SavedGemsPanel } from "@/components/SavedGemsPanel";
 import { cn } from "@/lib/cn";
 import { useSavedGemsCount } from "@/lib/savedGems";
 import type { SearchResult } from "@/types";
@@ -29,6 +30,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const savedCount = useSavedGemsCount();
+  const [savedPanelOpen, setSavedPanelOpen] = useState(false);
 
   const handleSearch = async () => {
     const trimmedQuery = query.trim();
@@ -85,24 +87,18 @@ export default function Home() {
     <main className="relative min-h-screen overflow-x-hidden bg-cream">
       {/* Top-right nav */}
       <div className="absolute top-4 right-4 z-10 sm:top-6 sm:right-6 flex items-center gap-2">
-        <Link
-          href="/map"
-          className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-stone-500 transition-colors duration-150 hover:border-stone-950 hover:text-stone-950"
-        >
-          <Map className="h-3 w-3" />
-          Map
-        </Link>
-        <span
+<button
+          onClick={() => setSavedPanelOpen(true)}
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors duration-150",
             savedCount > 0
-              ? "border-rust/40 bg-rust/10 text-rust"
-              : "border-stone-300 bg-white text-stone-500"
+              ? "border-rust/40 bg-rust/10 text-rust hover:bg-rust/20"
+              : "border-stone-300 bg-white text-stone-500 hover:border-stone-950 hover:text-stone-950"
           )}
         >
           <Bookmark className="h-3 w-3" fill={savedCount > 0 ? "currentColor" : "none"} />
           {savedCount} saved
-        </span>
+        </button>
       </div>
 
       {/* Hero / search section */}
@@ -208,6 +204,8 @@ export default function Home() {
           </p>
         </footer>
       )}
+
+      <SavedGemsPanel open={savedPanelOpen} onClose={() => setSavedPanelOpen(false)} />
     </main>
   );
 }
