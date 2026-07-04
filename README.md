@@ -4,6 +4,8 @@
 
 Describe the mood you're after — *"quiet corner with good espresso to read on a rainy morning"* — or just tap a few preferences, and get back a ranked list of matching coffee shops, each with an AI-generated note on *why* it fits.
 
+**[🔴 Live demo →](https://hidden-gems-wine.vercel.app/)**
+
 **[→ How it works](#how-it-works)** · **[→ Quick start](#quick-start)** · **[→ Deploy](DEPLOY.md)**
 
 ---
