@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-import Link from "next/link";
 import { Bookmark } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
 import { FilterPanel, type Filters } from "@/components/FilterPanel";
