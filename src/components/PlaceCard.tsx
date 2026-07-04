@@ -121,7 +121,7 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
         </h3>
 
         {/* AI match blurb */}
-        <p className="text-sm italic leading-relaxed text-stone-700 border-l-2 border-rust pl-3">
+        <p className="text-sm italic leading-relaxed text-stone-700 border-l-2 border-rust pl-3 line-clamp-3">
           {place.match_blurb}
         </p>
 
@@ -141,10 +141,6 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
           </div>
         )}
 
-        {/* Editorial summary */}
-        <p className="text-sm text-stone-500 leading-relaxed line-clamp-3">
-          {place.editorial_summary}
-        </p>
 
         {/* Footer */}
         <div className="mt-auto pt-3 border-t border-stone-200 flex items-center justify-between gap-2">
