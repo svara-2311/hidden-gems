@@ -113,6 +113,41 @@ email. They get the hosted Table Editor.
 > Groq per query — billed to whoever's keys are in the running `.env.local`.
 > For long-term use, each person should use their own API keys.
 
+---
+
+## Deploying the app to Vercel
+
+The database lives on Supabase (above); the Next.js app deploys to Vercel and
+points at it. Vercel auto-detects Next.js — no config file needed. `prisma generate`
+runs automatically via the `postinstall` script.
+
+1. **Create an account** — [vercel.com](https://vercel.com) → sign up with GitHub
+   (free Hobby plan, no credit card).
+2. **Import the repo** — **Add New → Project** → pick `svara-2311/hidden-gems` →
+   **Import**. Leave the framework preset (Next.js) and build settings as-is.
+3. **Add environment variables** (Project → Settings → Environment Variables) for
+   the **Production** environment:
+
+   | Variable | Value |
+   |---|---|
+   | `DATABASE_URL` | Supabase **transaction pooler** (`:6543 ?pgbouncer=true`) |
+   | `DIRECT_URL` | Supabase **session pooler** (`:5432`) |
+   | `OPENAI_API_KEY` | your OpenAI key |
+   | `GROQ_API_KEY` | your Groq key |
+
+   > `GOOGLE_PLACES_API_KEY` is **not** needed on Vercel — it's only for seeding,
+   > which you run locally. The DB is already populated.
+
+4. **Deploy** — click **Deploy**. First build takes ~1–2 min.
+5. **Verify** — open the generated `*.vercel.app` URL and run a search.
+
+**Re-deploys are automatic:** every push to `main` triggers a new deployment.
+To share, send your co-founder the `*.vercel.app` link — no local setup needed.
+
+> **Note on the free Supabase pause:** if the Supabase project has been idle and
+> paused, the first request from Vercel will fail until you resume it in the
+> Supabase dashboard.
+
 ## Gotchas recap
 
 | Symptom | Fix |
