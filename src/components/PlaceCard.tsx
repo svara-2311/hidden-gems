@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { MapPin, ArrowUpRight, Gem, Share2 } from "lucide-react";
+import { MapPin, ArrowUpRight, Gem, Share2, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PLACE_ILLUSTRATIONS } from "@/components/illustrations";
 import { cn } from "@/lib/cn";
@@ -139,6 +139,17 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
               </Badge>
             ))}
           </div>
+        )}
+
+        {/* Known for */}
+        {place.famous_for && (
+          <p className="flex items-start gap-1.5 text-xs text-stone-600">
+            <Star className="h-3.5 w-3.5 shrink-0 text-rust mt-0.5" fill="currentColor" />
+            <span>
+              <span className="font-semibold text-stone-800">Known for</span>{" "}
+              {place.famous_for}
+            </span>
+          </p>
         )}
 
 

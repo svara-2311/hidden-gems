@@ -24,6 +24,8 @@ export interface EnrichInput {
 export interface EnrichResult {
   vibe_tags: VibeTag[];
   specialties: DrinkType[];
+  // Short "known for" line — a concrete signature item or standout feature.
+  famous_for: string;
 }
 
 const VIBE_SET = new Set<string>(VIBE_TAGS);
@@ -38,10 +40,19 @@ ${VIBE_TAGS.join(", ")}
 DRINK_TYPES (pick 2-5 the place is known for or clearly serves):
 ${DRINK_TYPES.join(", ")}
 
+Also write KNOWN_FOR: a short, specific "known for" line (max ~8 words). If you
+recognize the named place, use what it is genuinely known for (a signature drink,
+house roast, pastry, or feature). Otherwise infer a plausible specialty from the
+description. HARD RULE: never output generic filler that just restates "coffee" or
+the city — e.g. "Quality coffee in San Francisco", "Great coffee", "Cozy
+neighborhood cafe" are all forbidden. Always name a concrete drink, item, roast
+style, or standout feature. Good: "House-roasted single-origin espresso",
+"Cardamom buns & flat whites", "Nitro cold brew on tap", "Vietnamese egg coffee".
+
 Base your choices on the place's description. If the description is generic, infer sensible defaults for a coffee shop (e.g. espresso, latte for drinks). Always return at least 1 of each.
 
 Respond with STRICT JSON of the shape:
-{"items":[{"vibe_tags":["..."],"specialties":["..."]}, ...]}
+{"items":[{"vibe_tags":["..."],"specialties":["..."],"known_for":"..."}, ...]}
 The items array MUST be in the same order and same length as the input list.`;
 
 async function callModel(inputs: EnrichInput[]): Promise<EnrichResult[]> {
@@ -54,7 +65,7 @@ async function callModel(inputs: EnrichInput[]): Promise<EnrichResult[]> {
 
   const response = await getOpenAI().chat.completions.create({
     model: "gpt-4o-mini",
-    temperature: 0.3,
+    temperature: 0.5,
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
@@ -74,7 +85,11 @@ async function callModel(inputs: EnrichInput[]): Promise<EnrichResult[]> {
 
 // Keep only values that exist in the controlled vocab; guarantee ≥1 of each.
 function sanitize(raw: unknown): EnrichResult {
-  const obj = (raw ?? {}) as { vibe_tags?: unknown; specialties?: unknown };
+  const obj = (raw ?? {}) as {
+    vibe_tags?: unknown;
+    specialties?: unknown;
+    known_for?: unknown;
+  };
   const vibe_tags = uniq(
     (Array.isArray(obj.vibe_tags) ? obj.vibe_tags : [])
       .map((v) => String(v).toLowerCase().trim())
@@ -85,10 +100,13 @@ function sanitize(raw: unknown): EnrichResult {
       .map((v) => String(v).toLowerCase().trim())
       .filter((v): v is DrinkType => DRINK_SET.has(v))
   ).slice(0, 5);
+  const famous_for =
+    typeof obj.known_for === "string" ? obj.known_for.trim().slice(0, 80) : "";
 
   return {
     vibe_tags: vibe_tags.length ? vibe_tags : ["cozy"],
     specialties: specialties.length ? specialties : ["espresso", "latte"],
+    famous_for,
   };
 }
 

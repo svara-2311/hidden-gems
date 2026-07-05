@@ -413,6 +413,7 @@ async function main(): Promise<void> {
     enriched.forEach((p, i) => {
       p.vibe_tags = enrichResults[i].vibe_tags;
       p.specialties = enrichResults[i].specialties;
+      p.famous_for = enrichResults[i].famous_for;
     });
     console.log(" ✓");
 
