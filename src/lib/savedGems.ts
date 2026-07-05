@@ -9,6 +9,7 @@ export interface SavedGem {
   neighborhood: string;
   vibe_tags?: string[];
   match_blurb?: string;
+  famous_for?: string;
 }
 
 function readSavedGems(): SavedGem[] {

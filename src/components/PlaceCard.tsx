@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { MapPin, ArrowUpRight, Gem, Share2, Star } from "lucide-react";
+import { MapPin, ArrowUpRight, Gem, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PLACE_ILLUSTRATIONS } from "@/components/illustrations";
 import { cn } from "@/lib/cn";
@@ -17,7 +17,6 @@ interface PlaceCardProps {
 export function PlaceCard({ place, index }: PlaceCardProps) {
   const Illustration = PLACE_ILLUSTRATIONS[index % PLACE_ILLUSTRATIONS.length];
   const [isSaved, setIsSaved] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     setIsSaved(isGemSaved(place.id));
@@ -32,20 +31,9 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
         neighborhood: place.neighborhood,
         vibe_tags: place.vibe_tags,
         match_blurb: place.match_blurb,
+        famous_for: place.famous_for,
       })
     );
-  };
-
-  const handleShare = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const text = `Found a hidden gem! ☕ ${place.name} — ${place.neighborhood} 📍 ${place.google_maps_url} #HiddenGems`;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      // Clipboard API unavailable (e.g. insecure context) — fail silently.
-    }
   };
 
   const openInMaps = () =>
@@ -166,39 +154,22 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
             <ArrowUpRight className="h-3.5 w-3.5" />
           </a>
 
-          {/* Save & share actions */}
-          <div className="relative flex items-center gap-1.5">
-            {copied && (
-              <span className="absolute -top-9 right-0 whitespace-nowrap rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-stone-700 animate-fade-in">
-                Copied!
-              </span>
+          {/* Collect this gem */}
+          <button
+            type="button"
+            onClick={handleToggleSave}
+            aria-pressed={isSaved}
+            aria-label={isSaved ? "Remove from my gems" : "Add to my gems"}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide transition-all duration-150 active:scale-95",
+              isSaved
+                ? "border-rust/40 bg-rust/10 text-rust"
+                : "border-stone-300 bg-white text-stone-500 hover:border-stone-950 hover:text-stone-950"
             )}
-
-            <button
-              type="button"
-              onClick={handleToggleSave}
-              aria-pressed={isSaved}
-              aria-label={isSaved ? "Remove from my gems" : "Add to my gems"}
-              title={isSaved ? "Remove from my gems" : "Add to my gems"}
-              className={cn(
-                "flex h-7 w-7 items-center justify-center rounded-full border transition-colors duration-150",
-                isSaved
-                  ? "border-rust/40 bg-rust/10 text-rust"
-                  : "border-stone-300 bg-white text-stone-400 hover:border-stone-900 hover:text-stone-900"
-              )}
-            >
-              <Gem className="h-3.5 w-3.5" fill={isSaved ? "currentColor" : "none"} />
-            </button>
-
-            <button
-              type="button"
-              onClick={handleShare}
-              aria-label="Copy a shareable summary of this gem"
-              className="flex h-7 w-7 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-400 hover:border-stone-900 hover:text-stone-900 transition-colors duration-150"
-            >
-              <Share2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          >
+            <Gem className="h-3.5 w-3.5" fill={isSaved ? "currentColor" : "none"} />
+            {isSaved ? "In your gems" : "Add gem"}
+          </button>
         </div>
       </div>
     </article>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { X, Gem, MapPin, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { X, Gem, MapPin, Trash2, Share2, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
+import { GemStoryCard, STORY_W, STORY_H } from "@/components/GemStoryCard";
 import {
   getSavedGems,
   toggleSavedGem,
@@ -18,6 +19,8 @@ interface SavedGemsPanelProps {
 
 export function SavedGemsPanel({ open, onClose }: SavedGemsPanelProps) {
   const [gems, setGems] = useState<SavedGem[]>([]);
+  const [sharing, setSharing] = useState(false);
+  const storyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const sync = () => setGems(getSavedGems());
@@ -28,6 +31,37 @@ export function SavedGemsPanel({ open, onClose }: SavedGemsPanelProps) {
 
   const handleRemove = (gem: SavedGem) => {
     toggleSavedGem(gem);
+  };
+
+  // Render the story card to a PNG and share it (or download on desktop).
+  const handleShareStory = async () => {
+    if (!storyRef.current || gems.length === 0 || sharing) return;
+    setSharing(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      // skipFonts avoids html-to-image hanging on the app's Next.js web fonts;
+      // the story card uses system/Georgia fonts, so nothing needs embedding.
+      const dataUrl = await toPng(storyRef.current, {
+        pixelRatio: 1,
+        cacheBust: true,
+        skipFonts: true,
+      });
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], "my-coffee-gems.png", { type: "image/png" });
+
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "My Coffee Gems ☕" });
+      } else {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = "my-coffee-gems.png";
+        a.click();
+      }
+    } catch {
+      // user cancelled the share sheet, or capture failed — no-op
+    } finally {
+      setSharing(false);
+    }
   };
 
   return (
@@ -78,7 +112,7 @@ export function SavedGemsPanel({ open, onClose }: SavedGemsPanelProps) {
               <Gem className="h-8 w-8 text-stone-300" />
               <p className="text-sm font-serif font-bold text-stone-950">No saved gems yet</p>
               <p className="text-xs text-stone-400 leading-relaxed">
-                Tap the bookmark on any result to save it here.
+                Tap &ldquo;Add gem&rdquo; on any result to collect it here.
               </p>
             </div>
           ) : (
@@ -126,9 +160,25 @@ export function SavedGemsPanel({ open, onClose }: SavedGemsPanelProps) {
           )}
         </div>
 
-        {/* Footer — clear all */}
+        {/* Footer — share + clear */}
         {gems.length > 0 && (
-          <div className="px-5 py-4 border-t border-stone-200">
+          <div className="px-5 py-4 border-t border-stone-200 space-y-2">
+            <button
+              onClick={handleShareStory}
+              disabled={sharing}
+              className={cn(
+                "flex w-full items-center justify-center gap-2 rounded-xl bg-stone-950 px-4 py-2.5",
+                "text-sm font-bold uppercase tracking-wide text-cream",
+                "transition-all duration-150 hover:bg-stone-800 active:scale-[0.99] disabled:opacity-60"
+              )}
+            >
+              {sharing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Share2 className="h-4 w-4" />
+              )}
+              {sharing ? "Creating…" : "Share as story"}
+            </button>
             <button
               onClick={() => gems.forEach((g) => toggleSavedGem(g))}
               className="w-full text-xs font-bold uppercase tracking-wide text-stone-400 hover:text-red-400 transition-colors duration-150"
@@ -138,6 +188,23 @@ export function SavedGemsPanel({ open, onClose }: SavedGemsPanelProps) {
           </div>
         )}
       </div>
+
+      {/* Off-screen story card, captured to a PNG on share */}
+      {gems.length > 0 && (
+        <div
+          aria-hidden
+          style={{
+            position: "fixed",
+            top: 0,
+            left: -99999,
+            width: STORY_W,
+            height: STORY_H,
+            pointerEvents: "none",
+          }}
+        >
+          <GemStoryCard ref={storyRef} gems={gems} />
+        </div>
+      )}
     </>
   );
 }
