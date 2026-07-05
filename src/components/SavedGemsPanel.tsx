@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Bookmark, MapPin, Trash2 } from "lucide-react";
+import { X, Gem, MapPin, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import {
@@ -52,9 +52,9 @@ export function SavedGemsPanel({ open, onClose }: SavedGemsPanelProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-stone-200">
           <div className="flex items-center gap-2">
-            <Bookmark className="h-4 w-4 text-rust" fill="currentColor" />
+            <Gem className="h-4 w-4 text-rust" fill="currentColor" />
             <span className="text-sm font-bold uppercase tracking-wide text-stone-950">
-              Saved Gems
+              My Gems
             </span>
             {gems.length > 0 && (
               <span className="text-[10px] font-bold bg-rust/10 text-rust border border-rust/30 rounded-full px-2 py-0.5">
@@ -75,7 +75,7 @@ export function SavedGemsPanel({ open, onClose }: SavedGemsPanelProps) {
         <div className="flex-1 overflow-y-auto">
           {gems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
-              <Bookmark className="h-8 w-8 text-stone-300" />
+              <Gem className="h-8 w-8 text-stone-300" />
               <p className="text-sm font-serif font-bold text-stone-950">No saved gems yet</p>
               <p className="text-xs text-stone-400 leading-relaxed">
                 Tap the bookmark on any result to save it here.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Bookmark } from "lucide-react";
+import { Gem } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
 import { FilterPanel, type Filters } from "@/components/FilterPanel";
 import { ResultsGrid, LoadingGrid } from "@/components/ResultsGrid";
@@ -95,8 +95,8 @@ export default function Home() {
               : "border-stone-300 bg-white text-stone-500 hover:border-stone-950 hover:text-stone-950"
           )}
         >
-          <Bookmark className="h-3 w-3" fill={savedCount > 0 ? "currentColor" : "none"} />
-          {savedCount} saved
+          <Gem className="h-3 w-3" fill={savedCount > 0 ? "currentColor" : "none"} />
+          {savedCount === 1 ? "1 gem" : `${savedCount} gems`}
         </button>
       </div>
 

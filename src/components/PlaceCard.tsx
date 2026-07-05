@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { MapPin, ArrowUpRight, Bookmark, Share2 } from "lucide-react";
+import { MapPin, ArrowUpRight, Gem, Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PLACE_ILLUSTRATIONS } from "@/components/illustrations";
 import { cn } from "@/lib/cn";
@@ -167,7 +167,8 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
               type="button"
               onClick={handleToggleSave}
               aria-pressed={isSaved}
-              aria-label={isSaved ? "Remove from saved gems" : "Save this gem"}
+              aria-label={isSaved ? "Remove from my gems" : "Add to my gems"}
+              title={isSaved ? "Remove from my gems" : "Add to my gems"}
               className={cn(
                 "flex h-7 w-7 items-center justify-center rounded-full border transition-colors duration-150",
                 isSaved
@@ -175,7 +176,7 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
                   : "border-stone-300 bg-white text-stone-400 hover:border-stone-900 hover:text-stone-900"
               )}
             >
-              <Bookmark className="h-3.5 w-3.5" fill={isSaved ? "currentColor" : "none"} />
+              <Gem className="h-3.5 w-3.5" fill={isSaved ? "currentColor" : "none"} />
             </button>
 
             <button
