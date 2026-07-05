@@ -167,7 +167,10 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
                 : "border-stone-300 bg-white text-stone-500 hover:border-stone-950 hover:text-stone-950"
             )}
           >
-            <Gem className="h-3.5 w-3.5" fill={isSaved ? "currentColor" : "none"} />
+            <Gem
+              className={cn("h-4 w-4 transition-transform", isSaved && "scale-110")}
+              fill={isSaved ? "currentColor" : "none"}
+            />
             {isSaved ? "In your gems" : "Add gem"}
           </button>
         </div>
