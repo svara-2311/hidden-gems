@@ -134,9 +134,11 @@ runs automatically via the `postinstall` script.
    | `DIRECT_URL` | Supabase **session pooler** (`:5432`) |
    | `OPENAI_API_KEY` | your OpenAI key |
    | `GROQ_API_KEY` | your Groq key |
+   | `GOOGLE_PLACES_API_KEY` | your Google Places key |
 
-   > `GOOGLE_PLACES_API_KEY` is **not** needed on Vercel — it's only for seeding,
-   > which you run locally. The DB is already populated.
+   > `GOOGLE_PLACES_API_KEY` is required on Vercel because the **"Add a cafe"**
+   > flow looks cafes up on Google Places at runtime. (It's also used by the
+   > local seed.) Without it, cafe lookup returns "Lookup failed."
 
 4. **Deploy** — click **Deploy**. First build takes ~1–2 min.
 5. **Verify** — open the generated `*.vercel.app` URL and run a search.

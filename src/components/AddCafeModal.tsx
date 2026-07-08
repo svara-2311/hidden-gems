@@ -225,18 +225,16 @@ export function AddCafeModal({ open, onClose }: AddCafeModalProps) {
                   {error && (
                     <div className="mt-3 text-xs text-rust">
                       {error}{" "}
-                      {error.includes("personal") && (
-                        <button
-                          onClick={() => {
-                            setMode("personal");
-                            setNeighborhood("");
-                            setError(null);
-                          }}
-                          className="font-bold underline"
-                        >
-                          Add manually
-                        </button>
-                      )}
+                      <button
+                        onClick={() => {
+                          setMode("personal");
+                          setNeighborhood("");
+                          setError(null);
+                        }}
+                        className="font-bold underline"
+                      >
+                        Add it manually
+                      </button>
                     </div>
                   )}
                   <button
