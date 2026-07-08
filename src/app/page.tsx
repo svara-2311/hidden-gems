@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Gem } from "lucide-react";
+import { Gem, Plus } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
 import { FilterPanel, type Filters } from "@/components/FilterPanel";
 import { ResultsGrid, LoadingGrid } from "@/components/ResultsGrid";
 import { CoffeeCupIllustration } from "@/components/illustrations";
 import { SavedGemsPanel } from "@/components/SavedGemsPanel";
+import { AddCafeModal } from "@/components/AddCafeModal";
 import { cn } from "@/lib/cn";
 import { useSavedGemsCount } from "@/lib/savedGems";
 import type { SearchResult } from "@/types";
@@ -30,6 +31,7 @@ export default function Home() {
   const resultsRef = useRef<HTMLDivElement>(null);
   const savedCount = useSavedGemsCount();
   const [savedPanelOpen, setSavedPanelOpen] = useState(false);
+  const [addCafeOpen, setAddCafeOpen] = useState(false);
 
   const handleSearch = async () => {
     const trimmedQuery = query.trim();
@@ -86,7 +88,14 @@ export default function Home() {
     <main className="relative min-h-screen overflow-x-hidden bg-cream">
       {/* Top-right nav */}
       <div className="absolute top-4 right-4 z-10 sm:top-6 sm:right-6 flex items-center gap-2">
-<button
+        <button
+          onClick={() => setAddCafeOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-stone-500 hover:border-stone-950 hover:text-stone-950 transition-colors duration-150"
+        >
+          <Plus className="h-3 w-3" />
+          Add a cafe
+        </button>
+        <button
           onClick={() => setSavedPanelOpen(true)}
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors duration-150",
@@ -179,8 +188,15 @@ export default function Home() {
               No coffee shops found.
             </p>
             <p className="text-stone-500 text-sm mt-2">
-              Try a different search — or check that the database is seeded.
+              Know a spot that should be here? Add it to the list.
             </p>
+            <button
+              onClick={() => setAddCafeOpen(true)}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-stone-950 px-4 py-2 text-xs font-bold uppercase tracking-wide text-cream hover:bg-stone-800 transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add a cafe
+            </button>
           </div>
         )}
 
@@ -205,6 +221,7 @@ export default function Home() {
       )}
 
       <SavedGemsPanel open={savedPanelOpen} onClose={() => setSavedPanelOpen(false)} />
+      <AddCafeModal open={addCafeOpen} onClose={() => setAddCafeOpen(false)} />
     </main>
   );
 }

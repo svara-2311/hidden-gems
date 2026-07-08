@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { MapPin, ArrowUpRight, Gem, Star } from "lucide-react";
+import { MapPin, ArrowUpRight, Gem, Star, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PLACE_ILLUSTRATIONS } from "@/components/illustrations";
 import { cn } from "@/lib/cn";
@@ -46,6 +46,7 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
   const vibeTags = [...place.vibe_tags].sort(
     (a, b) => Number(matchedVibes.has(b)) - Number(matchedVibes.has(a))
   );
+  const isCommunity = place.sources?.some((s) => s.type === "submission");
 
   return (
     <article
@@ -92,6 +93,16 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
             {place.neighborhood}
           </span>
         </div>
+
+        {/* Community-added badge */}
+        {isCommunity && (
+          <div className="absolute top-3 left-3.5">
+            <span className="inline-flex items-center gap-1 rounded-full border border-rust/40 bg-rust/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rust">
+              <Users className="h-2.5 w-2.5" />
+              Community
+            </span>
+          </div>
+        )}
 
         {/* Similarity score */}
         <div className="absolute top-3 right-3.5">

@@ -15,7 +15,8 @@ Describe the mood you're after — *"quiet corner with good espresso to read on 
 - **Semantic search** over a curated database of 546 Bay Area coffee shops using vector embeddings — search by *vibe*, not keywords.
 - **Preference filters** (Area / Vibe / Drinks) that *rank* rather than exclude, so you never hit a dead-end "no results" screen.
 - **AI match blurbs** — a one-liner per result explaining why it fits your search.
-- **Save & share** gems (stored locally), viewable in a slide-out panel.
+- **Save & share** gems (stored locally), viewable in a slide-out panel — export your collection as an Instagram-story image.
+- **Add a cafe** — missing a spot? Enter a name and it's looked up on Google Places, auto-enriched, and added to the shared list (or add a personal/home cafe manually). Community additions are badged.
 
 ## How it works
 
