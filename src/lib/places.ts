@@ -42,11 +42,22 @@ function pgTextArray(values: string[]): string {
     .join(",")}}`;
 }
 
-// A place already in the DB with a very similar name (basic dedupe guard).
+// A place already in the DB with a very similar name (dedupe guard). A bare
+// ILIKE only caught near-exact strings, so "Blue Bottle" vs "Bluebottle Coffee"
+// slipped through. Use pg_trgm fuzzy matching instead: similarity() handles
+// typos/reordering, and word_similarity($name, candidate) handles the case
+// where one name is a superset of the other (spacing/suffix differences).
+const NAME_MATCH_THRESHOLD = 0.4;
+
 export async function findSimilarPlace(name: string): Promise<{ name: string } | null> {
   const rows = await prisma.$queryRawUnsafe<Array<{ name: string }>>(
-    `SELECT name FROM places WHERE name ILIKE $1 LIMIT 1`,
-    name.trim()
+    `SELECT name
+       FROM places
+      WHERE GREATEST(similarity(name, $1), word_similarity($1, name)) >= $2
+      ORDER BY GREATEST(similarity(name, $1), word_similarity($1, name)) DESC
+      LIMIT 1`,
+    name.trim(),
+    NAME_MATCH_THRESHOLD
   );
   return rows[0] ?? null;
 }

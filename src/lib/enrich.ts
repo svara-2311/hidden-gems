@@ -31,6 +31,23 @@ export interface EnrichResult {
 const VIBE_SET = new Set<string>(VIBE_TAGS);
 const DRINK_SET = new Set<string>(DRINK_TYPES);
 
+// Generic "known for" filler the SYSTEM_PROMPT explicitly forbids. Kept in sync
+// with the examples in that prompt and matched case-insensitively at the start
+// of the line, where filler tends to appear ("Great coffee and pastries").
+const FORBIDDEN_FAMOUS_FOR: RegExp[] = [
+  /^quality coffee\b/i,
+  /^great coffee\b/i,
+  /^good coffee\b/i,
+  /^cozy neighborhood cafe\b/i,
+];
+
+// True when a famous_for is the kind of generic filler the prompt bans. Empty
+// is not "generic" — it's handled by the defaults elsewhere.
+function isGenericFamousFor(s: string): boolean {
+  const t = s.trim();
+  return t.length > 0 && FORBIDDEN_FAMOUS_FOR.some((re) => re.test(t));
+}
+
 const SYSTEM_PROMPT = `You are tagging Bay Area coffee shops for a search/filter app.
 For EACH place you are given, choose tags ONLY from these two fixed lists — never invent new values.
 
@@ -55,7 +72,7 @@ Respond with STRICT JSON of the shape:
 {"items":[{"vibe_tags":["..."],"specialties":["..."],"known_for":"..."}, ...]}
 The items array MUST be in the same order and same length as the input list.`;
 
-async function callModel(inputs: EnrichInput[]): Promise<EnrichResult[]> {
+async function callModelOnce(inputs: EnrichInput[]): Promise<EnrichResult[]> {
   const userPayload = inputs
     .map((p, i) => {
       const types = p.types?.length ? ` [types: ${p.types.join(", ")}]` : "";
@@ -80,7 +97,35 @@ async function callModel(inputs: EnrichInput[]): Promise<EnrichResult[]> {
   const parsed = JSON.parse(content) as { items?: unknown };
   const items = Array.isArray(parsed.items) ? parsed.items : [];
 
+  // The prompt requires items to mirror the input list 1:1. If the model drops
+  // or adds an entry, indexing would silently misattribute tags to the wrong
+  // place — treat the length mismatch as a parse failure so the retry path
+  // (callModelWithRetry) regenerates the whole batch.
+  if (items.length !== inputs.length) {
+    throw new Error(
+      `enrich: model returned ${items.length} items for ${inputs.length} inputs`
+    );
+  }
+
   return inputs.map((_, i) => sanitize(items[i]));
+}
+
+// One model call, then a single corrective retry if the model ignored the
+// "no generic filler" rule for any famous_for. We don't trust the instruction
+// alone: re-request the batch once, adopt the better line where the retry
+// improved it, and blank any that are still generic (empty renders cleanly and
+// is preferable to shipping filler). Other failures propagate to the outer
+// retry path (callModelWithRetry).
+async function callModel(inputs: EnrichInput[]): Promise<EnrichResult[]> {
+  const first = await callModelOnce(inputs);
+  if (!first.some((r) => isGenericFamousFor(r.famous_for))) return first;
+
+  const retry = await callModelOnce(inputs);
+  return first.map((r, i) => {
+    if (!isGenericFamousFor(r.famous_for)) return r;
+    const alt = retry[i];
+    return isGenericFamousFor(alt.famous_for) ? { ...r, famous_for: "" } : alt;
+  });
 }
 
 // Keep only values that exist in the controlled vocab; guarantee ≥1 of each.

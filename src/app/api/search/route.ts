@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getEmbedding } from "@/lib/openai";
 import { generateMatchBlurb } from "@/lib/groq";
+import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { AREA_GROUPS, AREA_PATTERNS, VIBE_TAGS, DRINK_TYPES } from "@/taxonomy";
 import type { RawPlace, SearchResult, Source } from "@/types";
 
@@ -49,6 +50,15 @@ function regionPatternsForAreas(areas: string[]): { patterns: string[]; regions:
 
 export async function POST(req: NextRequest) {
   try {
+    // Each search hits OpenAI (embedding) + Groq (blurbs), so cap per-IP spend.
+    const rl = rateLimit(`search:${clientIp(req)}`, { capacity: 10, refillPerSec: 0.5 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many searches — give it a moment and try again." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+      );
+    }
+
     const body = (await req.json()) as {
       query?: string;
       neighborhood?: string;
@@ -177,6 +187,21 @@ export async function POST(req: NextRequest) {
           matched_vibes,
           matched_drinks,
         };
+      })
+    );
+
+    // Minimal structured log of input → ranked output. Not user tracking — it's
+    // the raw material for an eval set (query/prefs vs. what ranked and how
+    // strongly), which doesn't exist yet. No IP or PII is recorded here.
+    console.log(
+      "[search]",
+      JSON.stringify({
+        query: trimmedQuery,
+        areas,
+        vibes,
+        drinks,
+        expandedArea,
+        results: results.map((r) => ({ id: r.id, similarity: r.similarity })),
       })
     );
 

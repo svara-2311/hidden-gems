@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { addPlace, findSimilarPlace, type AddPlaceInput } from "@/lib/places";
+import { rateLimit, clientIp } from "@/lib/rateLimit";
 
 // POST /api/places/add — insert a user-submitted cafe (confirmed real place or a
 // personal/apartment cafe). Enriches + embeds, tags it community-added.
 export async function POST(req: NextRequest) {
   try {
+    // Each add enriches (gpt-4o-mini) + embeds, and writes a row — keep it tight.
+    const rl = rateLimit(`add:${clientIp(req)}`, { capacity: 5, refillPerSec: 0.1 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: "Too many submissions — please slow down and try again shortly." },
+        { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+      );
+    }
+
     const body = (await req.json()) as Partial<AddPlaceInput>;
     const name = body.name?.trim();
     if (!name) {
