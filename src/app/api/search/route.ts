@@ -190,6 +190,21 @@ export async function POST(req: NextRequest) {
       })
     );
 
+    // Minimal structured log of input → ranked output. Not user tracking — it's
+    // the raw material for an eval set (query/prefs vs. what ranked and how
+    // strongly), which doesn't exist yet. No IP or PII is recorded here.
+    console.log(
+      "[search]",
+      JSON.stringify({
+        query: trimmedQuery,
+        areas,
+        vibes,
+        drinks,
+        expandedArea,
+        results: results.map((r) => ({ id: r.id, similarity: r.similarity })),
+      })
+    );
+
     return NextResponse.json({ results, query: trimmedQuery, expandedArea });
   } catch (error) {
     console.error("[/api/search]", error);
