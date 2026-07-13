@@ -80,6 +80,16 @@ async function callModel(inputs: EnrichInput[]): Promise<EnrichResult[]> {
   const parsed = JSON.parse(content) as { items?: unknown };
   const items = Array.isArray(parsed.items) ? parsed.items : [];
 
+  // The prompt requires items to mirror the input list 1:1. If the model drops
+  // or adds an entry, indexing would silently misattribute tags to the wrong
+  // place — treat the length mismatch as a parse failure so the retry path
+  // (callModelWithRetry) regenerates the whole batch.
+  if (items.length !== inputs.length) {
+    throw new Error(
+      `enrich: model returned ${items.length} items for ${inputs.length} inputs`
+    );
+  }
+
   return inputs.map((_, i) => sanitize(items[i]));
 }
 
