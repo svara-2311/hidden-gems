@@ -8,6 +8,8 @@ const config: Config = {
       colors: {
         cream: "#F5F0E8",
         rust: "#BA5A37",
+        latte: "#E9DCC9",
+        espresso: "#4A3728",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],

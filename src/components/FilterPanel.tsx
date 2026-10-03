@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Sparkles, Coffee, Search, X, Loader2 } from "lucide-react";
+import { Compass, Wand2, Coffee, Search, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
   AREA_GROUPS,
@@ -57,10 +57,16 @@ function Chip({
   );
 }
 
-const TABS: { id: Category; label: string; icon: typeof MapPin }[] = [
-  { id: "area", label: "Area", icon: MapPin },
-  { id: "vibe", label: "Vibe", icon: Sparkles },
-  { id: "drinks", label: "Drinks", icon: Coffee },
+const TABS: {
+  id: Category;
+  label: string;
+  icon: typeof Compass;
+  iconColor: string;
+  iconBg: string;
+}[] = [
+  { id: "area", label: "Area", icon: Compass, iconColor: "text-espresso/70", iconBg: "bg-latte" },
+  { id: "vibe", label: "Vibe", icon: Wand2, iconColor: "text-espresso/70", iconBg: "bg-latte" },
+  { id: "drinks", label: "Drinks", icon: Coffee, iconColor: "text-espresso/70", iconBg: "bg-latte" },
 ];
 
 export function FilterPanel({ filters, onChange, onSearch, isLoading }: FilterPanelProps) {
@@ -75,31 +81,50 @@ export function FilterPanel({ filters, onChange, onSearch, isLoading }: FilterPa
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      {/* Category buttons — tap one to reveal just its options below */}
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {TABS.map(({ id, label, icon: Icon }) => (
+      {/* Category buttons — big, tappable sticker cards. Tap one to reveal its options below. */}
+      <div className="flex items-start justify-center gap-3 sm:gap-4">
+        {TABS.map(({ id, label, icon: Icon, iconColor, iconBg }) => (
           <button
             key={id}
             type="button"
             onClick={() => setOpen((o) => (o === id ? null : id))}
             aria-expanded={open === id}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors duration-150",
+              "group relative flex flex-col items-center gap-2 rounded-[1.75rem] border-2 px-5 py-4 sm:px-6 transition-all duration-200",
               open === id
-                ? "border-stone-950 bg-stone-950 text-cream"
-                : "border-stone-300 bg-white text-stone-600 hover:border-stone-950 hover:text-stone-950"
+                ? "border-stone-950 bg-stone-950 -translate-y-1 shadow-[4px_4px_0_0_rgba(28,25,23,1)]"
+                : "border-stone-200 bg-white hover:-translate-y-1 hover:border-stone-950 hover:shadow-[4px_4px_0_0_rgba(28,25,23,1)]"
             )}
           >
-            <Icon className="h-3.5 w-3.5" />
-            {label}
             {counts[id] > 0 && (
-              <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rust px-1 text-[10px] text-white">
+              <span className="absolute -right-1.5 -top-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-rust px-1 text-[10px] font-bold text-white ring-2 ring-cream">
                 {counts[id]}
               </span>
             )}
+            <span
+              className={cn(
+                "flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full transition-transform duration-300 ease-out",
+                "group-hover:-rotate-6 group-hover:scale-110 group-active:scale-95",
+                iconBg,
+                iconColor
+              )}
+            >
+              <Icon className="h-6 w-6 sm:h-7 sm:w-7" strokeWidth={2.25} />
+            </span>
+            <span
+              className={cn(
+                "text-[11px] font-bold uppercase tracking-wide transition-colors duration-150",
+                open === id ? "text-cream" : "text-stone-600 group-hover:text-stone-950"
+              )}
+            >
+              {label}
+            </span>
           </button>
         ))}
-        {total > 0 && (
+      </div>
+
+      {total > 0 && (
+        <div className="mt-2.5 flex justify-center">
           <button
             type="button"
             onClick={() => onChange({ areas: [], vibes: [], drinks: [] })}
@@ -108,8 +133,8 @@ export function FilterPanel({ filters, onChange, onSearch, isLoading }: FilterPa
             <X className="h-3.5 w-3.5" />
             Clear
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Options for the open category only (one at a time) */}
       {open && (

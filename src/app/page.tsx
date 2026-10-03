@@ -140,8 +140,8 @@ export default function Home() {
           </h1>
 
           {!compact && (
-            <p className="mt-4 text-stone-600 text-base sm:text-lg max-w-sm mx-auto leading-relaxed animate-fade-in">
-              Describe the vibe. We&rsquo;ll find the right corner of the Bay.
+            <p className="mt-4 text-stone-600 text-sm sm:text-lg max-w-md sm:max-w-none mx-auto leading-relaxed animate-fade-in sm:whitespace-nowrap">
+              Describe the vibe, and we&rsquo;ll find the right corner of the Bay.
             </p>
           )}
         </div>
