@@ -12,7 +12,10 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "seed": "npx tsx scripts/seed.ts"
+    "seed": "npx tsx scripts/seed.ts",
+    "eval": "npx tsx evals/harness.ts",
+    "eval:tune": "npx tsx evals/tune.ts",
+    "eval:judge": "npx tsx evals/judge.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
