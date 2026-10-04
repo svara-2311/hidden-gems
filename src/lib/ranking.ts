@@ -16,7 +16,7 @@ import type { RawPlace } from "@/types";
 // Each matched vibe/drink nudges a result up without ever excluding others.
 // This is a tuned knob, not a magic constant — evals/tune.ts sweeps it.
 export const DEFAULT_MATCH_BONUS = 0.04;
-export const DEFAULT_PAGE_SIZE = 12;
+export const DEFAULT_PAGE_SIZE = 8;
 
 export interface RankedPlace {
   place: RawPlace;

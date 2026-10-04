@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Gem, Plus } from "lucide-react";
+import { Gem, Plus, SearchX } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
 import { FilterPanel, type Filters } from "@/components/FilterPanel";
 import { ResultsGrid, LoadingGrid } from "@/components/ResultsGrid";
@@ -26,12 +26,19 @@ export default function Home() {
   const [activeQuery, setActiveQuery] = useState("");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [expandedArea, setExpandedArea] = useState<string | null>(null);
+  const [notFoundCafe, setNotFoundCafe] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const savedCount = useSavedGemsCount();
   const [savedPanelOpen, setSavedPanelOpen] = useState(false);
   const [addCafeOpen, setAddCafeOpen] = useState(false);
+  const [addCafeInitialName, setAddCafeInitialName] = useState("");
+
+  const openAddCafe = (initialName = "") => {
+    setAddCafeInitialName(initialName);
+    setAddCafeOpen(true);
+  };
 
   const handleSearch = async () => {
     const trimmedQuery = query.trim();
@@ -48,6 +55,7 @@ export default function Home() {
     setActiveQuery(trimmedQuery || describeFilters(filters));
     setResults(null);
     setExpandedArea(null);
+    setNotFoundCafe(null);
 
     try {
       const res = await fetch("/api/search", {
@@ -69,6 +77,7 @@ export default function Home() {
 
       setResults(data.results);
       setExpandedArea(data.expandedArea ?? null);
+      setNotFoundCafe(data.notFoundCafe ?? null);
       // Scroll to results on mobile
       setTimeout(
         () => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
@@ -89,7 +98,7 @@ export default function Home() {
       {/* Top-right nav: in normal flow (stacked above hero) on mobile, absolute top-right from sm: up */}
       <div className="relative z-10 flex flex-wrap items-center justify-end gap-2 px-4 pt-4 sm:absolute sm:top-6 sm:right-6 sm:px-0 sm:pt-0">
         <button
-          onClick={() => setAddCafeOpen(true)}
+          onClick={() => openAddCafe()}
           className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-stone-500 hover:border-stone-950 hover:text-stone-950 transition-colors duration-150"
         >
           <Plus className="h-3 w-3" />
@@ -172,6 +181,22 @@ export default function Home() {
 
         {!isLoading && hasResults && (
           <>
+            {notFoundCafe && (
+              <div className="mb-5 flex flex-col items-center gap-2.5 rounded-2xl border-2 border-dashed border-stone-300 bg-white px-5 py-4 text-center animate-fade-in sm:flex-row sm:justify-between sm:text-left">
+                <p className="flex items-center gap-2 text-sm text-stone-600">
+                  <SearchX className="h-4 w-4 shrink-0 text-stone-400" />
+                  We couldn&rsquo;t find &ldquo;{notFoundCafe}&rdquo; in our list — here&rsquo;s
+                  what&rsquo;s closest instead.
+                </p>
+                <button
+                  onClick={() => openAddCafe(notFoundCafe)}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-stone-950 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-cream hover:bg-stone-800 transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add it
+                </button>
+              </div>
+            )}
             {expandedArea && (
               <p className="mb-5 text-center text-xs text-stone-500 animate-fade-in">
                 Not many matches in your area — showing the wider{" "}
@@ -191,7 +216,7 @@ export default function Home() {
               Know a spot that should be here? Add it to the list.
             </p>
             <button
-              onClick={() => setAddCafeOpen(true)}
+              onClick={() => openAddCafe(notFoundCafe ?? "")}
               className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-stone-950 px-4 py-2 text-xs font-bold uppercase tracking-wide text-cream hover:bg-stone-800 transition-colors"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -221,7 +246,11 @@ export default function Home() {
       )}
 
       <SavedGemsPanel open={savedPanelOpen} onClose={() => setSavedPanelOpen(false)} />
-      <AddCafeModal open={addCafeOpen} onClose={() => setAddCafeOpen(false)} />
+      <AddCafeModal
+        open={addCafeOpen}
+        onClose={() => setAddCafeOpen(false)}
+        initialName={addCafeInitialName}
+      />
     </main>
   );
 }

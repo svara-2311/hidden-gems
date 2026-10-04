@@ -14,7 +14,7 @@ import "./env";
 import { readFileSync } from "fs";
 import path from "path";
 import { retrieveCandidates } from "@/lib/search";
-import { rankCandidates } from "@/lib/ranking";
+import { rankCandidates, DEFAULT_MATCH_BONUS, DEFAULT_PAGE_SIZE } from "@/lib/ranking";
 import { prisma } from "@/lib/prisma";
 import { scoreCase, mean } from "./metrics";
 import type { RawPlace } from "@/types";
@@ -28,13 +28,16 @@ interface GoldCase {
   relevant: string[];
 }
 
+// Draft cases with relevant: [] aren't labeled yet — scoring them would just
+// add noise (everything looks like 0 recall), same skip harness.ts does.
 function loadDataset(): GoldCase[] {
   const file = path.resolve(process.cwd(), "evals/dataset.jsonl");
   return readFileSync(file, "utf8")
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean)
-    .map((l) => JSON.parse(l) as GoldCase);
+    .map((l) => JSON.parse(l) as GoldCase)
+    .filter((c) => c.relevant.some((r) => r.trim()));
 }
 
 const BONUSES = (process.env.BONUSES ?? "0,0.02,0.04,0.08,0.12")
@@ -72,18 +75,18 @@ async function run() {
         drinks: c.drinks,
         matchBonus: bonus,
       });
-      return scoreCase(ranked.map((r) => r.place.name), c.relevant);
+      return scoreCase(ranked.map((r) => r.place.name), c.relevant, DEFAULT_PAGE_SIZE);
     });
     return {
       bonus,
-      ndcg: mean(perCase, (m) => m.ndcgAt10),
+      ndcg: mean(perCase, (m) => m.ndcgAtDepth),
       p5: mean(perCase, (m) => m.precisionAt5),
     };
   });
 
   const best = rows.reduce((a, b) => (b.ndcg > a.ndcg ? b : a));
 
-  console.log("  bonus   nDCG@10   P@5");
+  console.log(`  bonus   nDCG@${DEFAULT_PAGE_SIZE}   P@5`);
   console.log("  ─────   ───────   ──────");
   for (const r of rows) {
     const marker = r.bonus === best.bonus ? "  ← best nDCG" : "";
@@ -92,7 +95,7 @@ async function run() {
     );
   }
   console.log(
-    `\n  Current default is ${0.04}. Sweep says ${best.bonus} maximizes nDCG@10 on this set.`
+    `\n  Current default is ${DEFAULT_MATCH_BONUS}. Sweep says ${best.bonus} maximizes nDCG@${DEFAULT_PAGE_SIZE} on this set.`
   );
   console.log("  (Small sets are noisy — grow dataset.jsonl before trusting a change.)\n");
 }

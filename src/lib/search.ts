@@ -85,7 +85,16 @@ export async function retrieveCandidates(
     }
 
     let similaritySelect = "1 AS similarity";
-    let orderBy = "ORDER BY created_at DESC";
+    // No text/vibe/drink signal to rank on (an area-only search) — fall back to
+    // Google's own popularity signal instead of insertion order. Rated places
+    // first, ranked by rating weighted by how many reviews back it up (so a
+    // single 5-star review doesn't outrank a well-reviewed 4.6), then places
+    // Google has no rating for yet (older rows, pre-dating this column) last,
+    // newest first among those as a final tiebreak.
+    let orderBy = `ORDER BY
+      (rating IS NULL) ASC,
+      (rating * LN(COALESCE(user_rating_count, 0) + 1)) DESC,
+      created_at DESC`;
     if (embedding) {
       params.push(`[${embedding.join(",")}]`);
       const i = params.length;

@@ -63,20 +63,28 @@ export function ndcgAtK(flags: boolean[], k: number): number {
 
 export interface CaseMetrics {
   precisionAt5: number;
-  recallAt10: number;
+  // Named generically (not recallAt10) because the depth is callers'
+  // DEFAULT_PAGE_SIZE, not a fixed 10 — recall/nDCG only mean what their label
+  // says if that label matches how many results actually get shown.
+  recallAtDepth: number;
   reciprocalRank: number;
-  ndcgAt10: number;
+  ndcgAtDepth: number;
   returnedCount: number;
 }
 
-/** Compute the standard metric bundle for one labeled case's ranked names. */
-export function scoreCase(rankedNames: string[], labels: string[]): CaseMetrics {
+/**
+ * Compute the standard metric bundle for one labeled case's ranked names.
+ * `depthK` should be the real number of results shown to users (ranking.ts's
+ * DEFAULT_PAGE_SIZE) — recall/nDCG beyond that depth measure something users
+ * never see.
+ */
+export function scoreCase(rankedNames: string[], labels: string[], depthK: number): CaseMetrics {
   const flags = relevanceFlags(rankedNames, labels);
   return {
     precisionAt5: precisionAtK(flags, 5),
-    recallAt10: recallAtK(rankedNames, labels, 10),
+    recallAtDepth: recallAtK(rankedNames, labels, depthK),
     reciprocalRank: reciprocalRank(flags),
-    ndcgAt10: ndcgAtK(flags, 10),
+    ndcgAtDepth: ndcgAtK(flags, depthK),
     returnedCount: rankedNames.length,
   };
 }

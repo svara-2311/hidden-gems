@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
       google_maps_url: body.google_maps_url,
       photo_url: body.photo_url ?? null,
       editorial_summary: body.editorial_summary,
+      rating: body.rating ?? null,
+      user_rating_count: body.user_rating_count ?? null,
     });
 
     return NextResponse.json({ place });

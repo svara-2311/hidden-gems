@@ -11,7 +11,7 @@ what the eval scores is what users get.
 |---|---|---|
 | **Retrieval / ranking** | Do the right cafes come back, in a good order? Precision@5, Recall@10, MRR, nDCG@10 | `npm run eval` |
 | **Parameter tuning** | Is `MATCH_BONUS` (ranking.ts) set to the right value? | `npm run eval:tune` |
-| **Generation** | Are the Groq blurbs faithful (no invented facts) and specific (no "great ambiance")? | `npm run eval:judge` |
+| **Generation** | Are the Groq blurbs faithful (no invented facts), specific (no "great ambiance"), and positive (a recommendation, never a put-down)? | `npm run eval:judge` |
 | **Invariants** | Every query returns ≥1 result; area broadening fires when sparse | folded into `npm run eval` |
 
 ## Prerequisites

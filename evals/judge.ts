@@ -1,11 +1,16 @@
 /**
  * judge.ts — LLM-as-judge for the per-result match blurbs (groq.ts).
  *
- * Generation quality has two failure modes worth catching automatically:
+ * Generation quality has three failure modes worth catching automatically:
  *   • faithfulness — the blurb asserts facts not supported by the place's
  *     editorial summary / vibe tags (hallucination).
  *   • specificity  — the blurb leans on the exact generic filler its own system
  *     prompt bans ("great ambiance", "cozy atmosphere", "hidden gem").
+ *   • positivity   — the blurb reads as a recommendation, not a review: it
+ *     should never put down the place or hedge on whether it belongs here.
+ *     (Caught a real regression: a loosely-worded "sharp, opinionated" system
+ *     prompt once produced "I'd rather drink bitter sludge than pretend this
+ *     is a legitimate spot" for a top result.)
  *
  * It generates real blurbs (Groq) for the top results of a sample of cases, then
  * scores each with gpt-4o-mini and reports pass rates. This measures the model,
@@ -42,16 +47,18 @@ function loadDataset(): GoldCase[] {
     .map((l) => JSON.parse(l) as GoldCase);
 }
 
-const JUDGE_SYSTEM = `You grade a one-to-two sentence blurb that explains why a coffee shop matches a user's search. You are given the ONLY facts that were available: the place's editorial summary and its vibe tags. Grade two things:
+const JUDGE_SYSTEM = `You grade a one-to-two sentence blurb that explains why a coffee shop matches a user's search. You are given the ONLY facts that were available: the place's editorial summary and its vibe tags. Grade three things:
 
 - "faithful": true if every specific claim in the blurb is supported by (or a fair paraphrase of) the provided summary/tags. false if it invents concrete facts not present (a signature drink, an award, a history, a menu item that isn't there).
 - "specific": true if the blurb reads like a real recommendation. false if it relies on empty filler such as "great ambiance", "cozy atmosphere", "hidden gem", "perfect spot", "something for everyone".
+- "positive": true if the blurb reads as an enthusiastic recommendation. false if it criticizes the place, calls it a bad or questionable match, says something negative about it, or is backhanded/sarcastic — this is a recommendation surface, never a review.
 
-Respond with STRICT JSON: {"faithful": boolean, "specific": boolean, "reason": "<10 words"}.`;
+Respond with STRICT JSON: {"faithful": boolean, "specific": boolean, "positive": boolean, "reason": "<10 words"}.`;
 
 interface Verdict {
   faithful: boolean;
   specific: boolean;
+  positive: boolean;
   reason: string;
 }
 
@@ -83,6 +90,7 @@ Blurb to grade: "${input.blurb}"`,
   return {
     faithful: parsed.faithful === true,
     specific: parsed.specific === true,
+    positive: parsed.positive === true,
     reason: typeof parsed.reason === "string" ? parsed.reason : "",
   };
 }
@@ -129,12 +137,13 @@ async function run() {
         blurb,
       });
       verdicts.push(v);
-      const flag = v.faithful && v.specific ? "✓" : "✗";
+      const pass = v.faithful && v.specific && v.positive;
+      const flag = pass ? "✓" : "✗";
       console.log(`  ${flag} ${place.name}`);
       console.log(`      “${blurb.replace(/\s+/g, " ").trim()}”`);
-      if (!(v.faithful && v.specific)) {
+      if (!pass) {
         console.log(
-          `      faithful=${v.faithful} specific=${v.specific} — ${v.reason}`
+          `      faithful=${v.faithful} specific=${v.specific} positive=${v.positive} — ${v.reason}`
         );
       }
     }
@@ -143,12 +152,14 @@ async function run() {
   const n = verdicts.length || 1;
   const faithful = verdicts.filter((v) => v.faithful).length;
   const specific = verdicts.filter((v) => v.specific).length;
-  const both = verdicts.filter((v) => v.faithful && v.specific).length;
+  const positive = verdicts.filter((v) => v.positive).length;
+  const both = verdicts.filter((v) => v.faithful && v.specific && v.positive).length;
 
   console.log("\n── Aggregate ──────────────────────────────────────────────");
   console.log(`  Faithful   ${faithful}/${n}  (${((faithful / n) * 100).toFixed(0)}%)`);
   console.log(`  Specific   ${specific}/${n}  (${((specific / n) * 100).toFixed(0)}%)`);
-  console.log(`  Both pass  ${both}/${n}  (${((both / n) * 100).toFixed(0)}%)\n`);
+  console.log(`  Positive   ${positive}/${n}  (${((positive / n) * 100).toFixed(0)}%)`);
+  console.log(`  All pass   ${both}/${n}  (${((both / n) * 100).toFixed(0)}%)\n`);
 }
 
 run()

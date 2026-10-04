@@ -17,6 +17,8 @@ const FIELD_MASK = [
   "places.photos",
   "places.editorialSummary",
   "places.addressComponents",
+  "places.rating",
+  "places.userRatingCount",
 ].join(",");
 
 interface AddressComponent {
@@ -34,6 +36,8 @@ interface RawPlace {
   photos?: Array<{ name: string }>;
   editorialSummary?: { text: string };
   addressComponents?: AddressComponent[];
+  rating?: number;
+  userRatingCount?: number;
 }
 
 export interface FoundCafe {
@@ -49,6 +53,8 @@ export interface FoundCafe {
   google_maps_url: string;
   photo_url: string | null;
   editorial_summary: string;
+  rating: number | null;
+  user_rating_count: number | null;
 }
 
 function pickComponent(components: AddressComponent[], ...types: string[]): string | null {
@@ -119,5 +125,7 @@ export async function lookupCafeByName(name: string): Promise<FoundCafe | null> 
     photo_url,
     editorial_summary:
       p.editorialSummary?.text || `${foundName} is a coffee spot in ${neighborhood}.`,
+    rating: p.rating ?? null,
+    user_rating_count: p.userRatingCount ?? null,
   };
 }

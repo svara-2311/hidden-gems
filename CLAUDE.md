@@ -18,7 +18,7 @@ Browser (src/app/page.tsx)
 src/app/api/search/route.ts
    │  1. embed query+prefs   → src/lib/openai.ts   (OpenAI text-embedding-3-small)
    │  2. pgvector rank + area filter  → src/lib/prisma.ts
-   │  3. per-result blurb    → src/lib/groq.ts     (Groq llama-3.1-8b-instant)
+   │  3. per-result blurb    → src/lib/groq.ts     (Groq qwen/qwen3.8-27b)
    ▼
 Postgres `places` table (vector(1536))
 ```

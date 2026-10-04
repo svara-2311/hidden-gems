@@ -27,6 +27,12 @@ model Place {
   vibe_tags         String[]
   specialties       String[]
   famous_for        String
+  // Google's own popularity signal — null until the place has been fetched
+  // with the rating fields requested (older rows predate this; a backfill
+  // pass will fill them in). Used as the ranking fallback when there's no
+  // text/vibe/drink signal to rank on (area-only searches).
+  rating            Float?
+  user_rating_count Int?
   vibe_embedding    Unsupported("vector(1536)")?
   sources           Json
   verified          Boolean                @default(true)

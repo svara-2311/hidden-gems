@@ -12,7 +12,7 @@ Describe the mood you're after — *"quiet corner with good espresso to read on 
 
 ## What it does
 
-- **Semantic search** over a curated database of 546 Bay Area coffee shops using vector embeddings — search by *vibe*, not keywords.
+- **Semantic search** over a growing database of Bay Area coffee shops (800+ and counting, across all 101 incorporated municipalities) using vector embeddings — search by *vibe*, not keywords.
 - **Preference filters** (Area / Vibe / Drinks) that *rank* rather than exclude, so you never hit a dead-end "no results" screen.
 - **AI match blurbs** — a one-liner per result explaining why it fits your search.
 - **Save & share** gems (stored locally), viewable in a slide-out panel — export your collection as an Instagram-story image.
@@ -24,7 +24,7 @@ The interesting part is the search pipeline (`POST /api/search`):
 
 1. **Embed** — the query text (plus any selected vibe/drink preferences) is embedded with OpenAI `text-embedding-3-small`.
 2. **Rank, don't filter** — pgvector orders every candidate by cosine similarity (`<=>`). Vibe/drink preferences add a small score bonus for matches instead of hard-filtering, so results are always relevant and never empty. **Area** is the one hard constraint, and it gracefully broadens to its wider region if a neighborhood is too sparse.
-3. **Explain** — Groq (`llama-3.1-8b-instant`) writes a 2-sentence "why this matches" blurb per result.
+3. **Explain** — Groq (`qwen/qwen3.8-27b`) writes a one-sentence "why this matches" blurb per result, grounded only in that place's real data (no invented details).
 
 The place database is built offline by `scripts/seed.ts`: **fetch from Google Places → LLM-enrich into a controlled vibe/drink vocabulary (`gpt-4o-mini`) → embed → upsert.**
 
@@ -37,7 +37,7 @@ The place database is built offline by `scripts/seed.ts`: **fetch from Google Pl
 | Database | PostgreSQL + pgvector (local or Supabase) |
 | ORM | Prisma |
 | Embeddings + enrichment | OpenAI (`text-embedding-3-small`, `gpt-4o-mini`) |
-| Match blurbs | Groq (`llama-3.1-8b-instant`) |
+| Match blurbs | Groq (`qwen/qwen3.8-27b`) |
 | Seed data | Google Places API |
 
 ## Quick start
@@ -91,6 +91,7 @@ src/
 ├── taxonomy.ts               # Controlled vibe / drink / area vocabularies
 └── types.ts
 scripts/seed.ts               # The one seed: fetch → enrich → embed → insert
+evals/                        # Retrieval metrics, ranking tuning, LLM-as-judge blurb grading
 prisma/schema.prisma          # Place model with vector(1536)
 ```
 
@@ -101,15 +102,20 @@ A few deliberate choices worth calling out:
 - **Filters rank, they don't exclude.** Hard `AND` filters over sparse tags collapse to zero results fast. Since the vibe/drink signal already lives in the embeddings, we fold preferences into the ranking instead — always relevant, never empty.
 - **A controlled vocabulary** (`src/taxonomy.ts`) is the single source of truth shared by the seed's LLM enrichment and the UI filters, so the structured columns stay clean enough to rank on.
 - **The right model for each job.** OpenAI for embeddings (Groq has none) and bulk enrichment (`gpt-4o-mini`, high rate limits); Groq for cheap per-request blurbs. Documented in [CLAUDE.md](CLAUDE.md).
+- **Evals, not vibes.** Every change to retrieval or ranking runs against a hand-labeled golden set (Precision@k, Recall@k, MRR, nDCG) before shipping, and every blurb-generation prompt change runs through an LLM-as-judge pass (faithful / specific / positive) — see [evals/README.md](evals/README.md).
 
 ## Scripts
 
 ```bash
-npm run dev          # Start dev server
-npm run seed         # Seed / top up the database
-npm run build        # Production build
-npm run db:studio    # Browse the DB in Prisma Studio
-npm run db:push      # Sync schema to the database
+npm run dev                  # Start dev server
+npm run seed                 # Seed / top up the database
+npm run build                # Production build
+npm run db:studio            # Browse the DB in Prisma Studio
+npm run db:push              # Sync schema to the database
+npm run eval                 # Retrieval/ranking metrics against the golden set
+npm run eval:tune            # Sweep the ranking formula's match bonus
+npm run eval:tune-candidates # Sweep how many candidates get re-ranked
+npm run eval:judge           # LLM-as-judge grading of match blurbs
 ```
 
 ## Deployment

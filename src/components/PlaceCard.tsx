@@ -103,13 +103,6 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
             </span>
           </div>
         )}
-
-        {/* Similarity score */}
-        <div className="absolute top-3 right-3.5">
-          <span className="text-[10px] font-mono font-medium text-stone-500 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
-            {Math.round(place.similarity * 100)}% match
-          </span>
-        </div>
       </div>
 
       {/* Body */}
@@ -120,7 +113,7 @@ export function PlaceCard({ place, index }: PlaceCardProps) {
         </h3>
 
         {/* AI match blurb */}
-        <p className="text-sm italic leading-relaxed text-stone-700 border-l-2 border-rust pl-3 line-clamp-3">
+        <p className="text-sm italic leading-relaxed text-stone-700 border-l-2 border-rust pl-3">
           {place.match_blurb}
         </p>
 

@@ -3,9 +3,11 @@
  *
  * For each labeled case in dataset.jsonl it reproduces production retrieval
  * (retrieveCandidates) and re-ranking (rankCandidates), then scores the ranked
- * names against the case's expected cafes: Precision@5, Recall@10, MRR,
- * nDCG@10. It also checks two invariants — every case returns ≥1 result
- * ("never empty"), and area broadening fires when a case says it should.
+ * names against the case's expected cafes: Precision@5, Recall@N, MRR, nDCG@N
+ * — where N is ranking.ts's DEFAULT_PAGE_SIZE (how many results a user
+ * actually sees), not a fixed 10. It also checks two invariants — every case
+ * returns ≥1 result ("never empty"), and area broadening fires when a case
+ * says it should.
  *
  *   npm run eval           # score the dataset, print per-case + aggregate table
  *   LABEL=1 npm run eval   # print the top-10 result names per case, so you can
@@ -18,7 +20,7 @@ import "./env";
 import { readFileSync } from "fs";
 import path from "path";
 import { retrieveCandidates } from "@/lib/search";
-import { rankCandidates } from "@/lib/ranking";
+import { rankCandidates, DEFAULT_PAGE_SIZE } from "@/lib/ranking";
 import { prisma } from "@/lib/prisma";
 import { scoreCase, mean, type CaseMetrics } from "./metrics";
 
@@ -83,7 +85,17 @@ async function run() {
       continue;
     }
 
-    const metrics = scoreCase(names, c.relevant);
+    const isUnlabeled = c.relevant.filter((r) => r.trim()).length === 0;
+
+    if (isUnlabeled) {
+      console.log(`${c.id.padEnd(28)}  ⚠ UNLABELED — run LABEL=1 and fill in "relevant"; skipped from aggregate`);
+      continue;
+    }
+
+    // Score at DEFAULT_PAGE_SIZE depth (what a user actually sees), not a
+    // fixed 10 — "Recall@10" is a lie if only 8 results are ever shown.
+    const metrics = scoreCase(names, c.relevant, DEFAULT_PAGE_SIZE);
+
     scored.push({
       id: c.id,
       metrics,
@@ -92,9 +104,9 @@ async function run() {
     });
 
     console.log(
-      `${c.id.padEnd(28)}  P@5 ${pct(metrics.precisionAt5)}  R@10 ${pct(
-        metrics.recallAt10
-      )}  MRR ${metrics.reciprocalRank.toFixed(2)}  nDCG@10 ${metrics.ndcgAt10.toFixed(2)}` +
+      `${c.id.padEnd(28)}  P@5 ${pct(metrics.precisionAt5)}  R@${DEFAULT_PAGE_SIZE} ${pct(
+        metrics.recallAtDepth
+      )}  MRR ${metrics.reciprocalRank.toFixed(2)}  nDCG@${DEFAULT_PAGE_SIZE} ${metrics.ndcgAtDepth.toFixed(2)}` +
         (metrics.returnedCount === 0 ? "  ⚠ EMPTY" : "")
     );
   }
@@ -104,12 +116,16 @@ async function run() {
     return;
   }
 
+  const unlabeledCount = cases.length - scored.length;
   const neverEmptyPass = scored.filter((s) => !s.empty).length;
   console.log("\n── Aggregate ──────────────────────────────────────────────");
+  if (unlabeledCount > 0) {
+    console.log(`  (${unlabeledCount} unlabeled case(s) excluded from the numbers below)`);
+  }
   console.log(`  Precision@5   ${pct(mean(scored, (s) => s.metrics.precisionAt5))}`);
-  console.log(`  Recall@10     ${pct(mean(scored, (s) => s.metrics.recallAt10))}`);
+  console.log(`  Recall@${DEFAULT_PAGE_SIZE}      ${pct(mean(scored, (s) => s.metrics.recallAtDepth))}`);
   console.log(`  MRR           ${mean(scored, (s) => s.metrics.reciprocalRank).toFixed(3)}`);
-  console.log(`  nDCG@10       ${mean(scored, (s) => s.metrics.ndcgAt10).toFixed(3)}`);
+  console.log(`  nDCG@${DEFAULT_PAGE_SIZE}       ${mean(scored, (s) => s.metrics.ndcgAtDepth).toFixed(3)}`);
   console.log(
     `  Never-empty   ${neverEmptyPass}/${scored.length} ${
       neverEmptyPass === scored.length ? "✓" : "✗ INVARIANT VIOLATED"

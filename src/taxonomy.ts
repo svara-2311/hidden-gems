@@ -22,6 +22,12 @@ export const VIBE_TAGS = [
   "classic",
   "trendy",
   "hidden-gem",
+  "family-friendly",
+  "pet-friendly",
+  "drive-thru",
+  "roastery",
+  "historic",
+  "scenic-view",
 ] as const;
 
 export type VibeTag = (typeof VIBE_TAGS)[number];
@@ -40,6 +46,12 @@ export const VIBE_LABELS: Record<VibeTag, string> = {
   classic: "Classic",
   trendy: "Trendy",
   "hidden-gem": "Hidden gem",
+  "family-friendly": "Family-friendly",
+  "pet-friendly": "Pet-friendly",
+  "drive-thru": "Drive-thru",
+  roastery: "On-site roastery",
+  historic: "Historic",
+  "scenic-view": "Scenic view",
 };
 
 // ── Drink types (specialties) ────────────────────────────────────────────────
@@ -58,6 +70,10 @@ export const DRINK_TYPES = [
   "nitro",
   "oat-milk",
   "pastries",
+  "boba",
+  "drip-coffee",
+  "breakfast",
+  "smoothie",
 ] as const;
 
 export type DrinkType = (typeof DRINK_TYPES)[number];
@@ -75,6 +91,10 @@ export const DRINK_LABELS: Record<DrinkType, string> = {
   nitro: "Nitro",
   "oat-milk": "Oat milk",
   pastries: "Pastries",
+  boba: "Boba",
+  "drip-coffee": "Drip coffee",
+  breakfast: "Breakfast",
+  smoothie: "Smoothie",
 };
 
 // ── Areas ─────────────────────────────────────────────────────────────────────
@@ -118,6 +138,15 @@ export const AREA_GROUPS: AreaGroup[] = [
     areas: [
       { label: "Oakland", patterns: ["Oakland", "Temescal", "Rockridge", "Grand Lake"] },
       { label: "Berkeley", patterns: ["Berkeley", "Elmwood", "Shattuck"] },
+      { label: "Alameda", patterns: ["Alameda"] },
+      { label: "San Leandro", patterns: ["San Leandro"] },
+      { label: "Fremont", patterns: ["Fremont"] },
+      { label: "Hayward", patterns: ["Hayward"] },
+      { label: "Pleasanton", patterns: ["Pleasanton"] },
+      { label: "Livermore", patterns: ["Livermore"] },
+      { label: "Walnut Creek", patterns: ["Walnut Creek"] },
+      { label: "Concord", patterns: ["Concord"] },
+      { label: "Richmond", patterns: ["Richmond"] },
     ],
   },
   {
@@ -129,6 +158,10 @@ export const AREA_GROUPS: AreaGroup[] = [
       { label: "San Mateo", patterns: ["San Mateo"] },
       { label: "Burlingame", patterns: ["Burlingame"] },
       { label: "Redwood City", patterns: ["Redwood City"] },
+      { label: "Daly City", patterns: ["Daly City"] },
+      { label: "South San Francisco", patterns: ["South San Francisco"] },
+      { label: "San Carlos", patterns: ["San Carlos"] },
+      { label: "Half Moon Bay", patterns: ["Half Moon Bay"] },
     ],
   },
   {
@@ -136,6 +169,11 @@ export const AREA_GROUPS: AreaGroup[] = [
     areas: [
       { label: "San Jose", patterns: ["San Jose", "Willow Glen"] },
       { label: "Los Gatos", patterns: ["Los Gatos"] },
+      { label: "Santa Clara", patterns: ["Santa Clara"] },
+      { label: "Sunnyvale", patterns: ["Sunnyvale"] },
+      { label: "Cupertino", patterns: ["Cupertino"] },
+      { label: "Milpitas", patterns: ["Milpitas"] },
+      { label: "Saratoga", patterns: ["Saratoga"] },
     ],
   },
   {
@@ -144,6 +182,17 @@ export const AREA_GROUPS: AreaGroup[] = [
       { label: "Mill Valley", patterns: ["Mill Valley"] },
       { label: "Sausalito", patterns: ["Sausalito"] },
       { label: "San Rafael", patterns: ["San Rafael"] },
+      { label: "Novato", patterns: ["Novato"] },
+    ],
+  },
+  {
+    region: "North Bay",
+    areas: [
+      { label: "Napa", patterns: ["Napa"] },
+      { label: "Santa Rosa", patterns: ["Santa Rosa"] },
+      { label: "Petaluma", patterns: ["Petaluma"] },
+      { label: "Vallejo", patterns: ["Vallejo"] },
+      { label: "Fairfield", patterns: ["Fairfield"] },
     ],
   },
 ];

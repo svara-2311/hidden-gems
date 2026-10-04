@@ -15,6 +15,7 @@
     "seed": "npx tsx scripts/seed.ts",
     "eval": "npx tsx evals/harness.ts",
     "eval:tune": "npx tsx evals/tune.ts",
+    "eval:tune-candidates": "npx tsx evals/tune-candidates.ts",
     "eval:judge": "npx tsx evals/judge.ts"
   },
   "dependencies": {

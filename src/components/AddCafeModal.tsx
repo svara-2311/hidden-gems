@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Search, Loader2, Check, MapPin, Coffee, Home } from "lucide-react";
 import { cn } from "@/lib/cn";
 import type { FoundCafe } from "@/lib/googlePlaces";
@@ -8,12 +8,15 @@ import type { FoundCafe } from "@/lib/googlePlaces";
 interface AddCafeModalProps {
   open: boolean;
   onClose: () => void;
+  // Pre-fills the cafe name — used when a search looked like a cafe name that
+  // isn't in the DB yet, so the user doesn't have to retype it.
+  initialName?: string;
 }
 
 type Mode = "real" | "personal";
 type Step = "input" | "confirm" | "done";
 
-export function AddCafeModal({ open, onClose }: AddCafeModalProps) {
+export function AddCafeModal({ open, onClose, initialName }: AddCafeModalProps) {
   const [mode, setMode] = useState<Mode>("real");
   const [step, setStep] = useState<Step>("input");
   const [name, setName] = useState("");
@@ -35,6 +38,12 @@ export function AddCafeModal({ open, onClose }: AddCafeModalProps) {
     setLoading(false);
     setError(null);
   };
+
+  // Re-seed the name whenever the modal opens (it stays mounted at `open:
+  // false`, so this can't just be initial state).
+  useEffect(() => {
+    if (open) setName(initialName ?? "");
+  }, [open, initialName]);
 
   const close = () => {
     reset();

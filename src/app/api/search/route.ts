@@ -3,6 +3,7 @@ import { generateMatchBlurb } from "@/lib/groq";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { retrieveCandidates } from "@/lib/search";
 import { rankCandidates } from "@/lib/ranking";
+import { findSimilarPlace, NAME_EXISTS_THRESHOLD } from "@/lib/places";
 import { VIBE_TAGS, DRINK_TYPES } from "@/taxonomy";
 import type { SearchResult, Source } from "@/types";
 
@@ -13,6 +14,20 @@ function asStringArray(v: unknown): string[] {
   if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string");
   if (typeof v === "string" && v.trim()) return [v.trim()];
   return [];
+}
+
+// A short query that reads like a proper noun — "Mildang Cafe", "Blue Bottle
+// Coffee" — rather than a mood/vibe description like "quiet corner to read".
+// Used to decide whether a search with no close name match in the DB should
+// prompt "add this cafe?" instead of just silently showing unrelated results.
+const PLACE_NAME_HINT = /\b(cafe|caff[eè]|coffee|roasters?|roastery|espresso|brew(?:ery)?|bakery)\b/i;
+
+function looksLikePlaceName(query: string): boolean {
+  const words = query.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0 || words.length > 6) return false;
+  if (PLACE_NAME_HINT.test(query)) return true;
+  const capitalized = words.filter((w) => /^[A-Z]/.test(w));
+  return capitalized.length >= Math.ceil(words.length * 0.6);
 }
 
 export async function POST(req: NextRequest) {
@@ -49,6 +64,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // If the query looks like a specific cafe's name and nothing in the DB is
+    // a close name match, surface a prompt to add it instead of silently
+    // falling back to semantically-nearby-but-unrelated results.
+    let notFoundCafe: string | null = null;
+    if (trimmedQuery && looksLikePlaceName(trimmedQuery)) {
+      const existing = await findSimilarPlace(trimmedQuery, NAME_EXISTS_THRESHOLD);
+      if (!existing) notFoundCafe = trimmedQuery;
+    }
+
     // Retrieve (embedding + pgvector + area broadening), then re-rank. Both live
     // in src/lib so the eval harness can reproduce them without HTTP — see evals/.
     const { candidates, expandedArea } = await retrieveCandidates({
@@ -71,7 +95,8 @@ export async function POST(req: NextRequest) {
               editorial_summary: place.editorial_summary,
               vibe_tags,
             });
-          } catch {
+          } catch (err) {
+            console.error("[search] blurb generation failed", err);
             match_blurb = `${place.name} made the list — worth checking out for this vibe.`;
           }
         }
@@ -105,7 +130,7 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    return NextResponse.json({ results, query: trimmedQuery, expandedArea });
+    return NextResponse.json({ results, query: trimmedQuery, expandedArea, notFoundCafe });
   } catch (error) {
     console.error("[/api/search]", error);
     return NextResponse.json(
