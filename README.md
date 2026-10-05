@@ -6,7 +6,7 @@ Describe the mood you're after — *"quiet corner with good espresso to read on 
 
 **[🔴 Live demo →](https://hidden-gems-wine.vercel.app/)**
 
-**[→ How it works](#how-it-works)** · **[→ Quick start](#quick-start)** · **[→ Deploy](DEPLOY.md)**
+**[→ How it works](#how-it-works)** · **[→ Evals](#evals)** · **[→ Quick start](#quick-start)** · **[→ Deploy](DEPLOY.md)**
 
 ---
 
@@ -23,10 +23,23 @@ Describe the mood you're after — *"quiet corner with good espresso to read on 
 The interesting part is the search pipeline (`POST /api/search`):
 
 1. **Embed** — the query text (plus any selected vibe/drink preferences) is embedded with OpenAI `text-embedding-3-small`.
-2. **Rank, don't filter** — pgvector orders every candidate by cosine similarity (`<=>`). Vibe/drink preferences add a small score bonus for matches instead of hard-filtering, so results are always relevant and never empty. **Area** is the one hard constraint, and it gracefully broadens to its wider region if a neighborhood is too sparse.
+2. **Rank, don't filter** — pgvector pulls the closest candidates by cosine similarity (`<=>`), then `rankCandidates()` re-scores each as `similarity + 0.04 × (matched vibe/drink tags)` and keeps the top 8. Preferences add a small bonus instead of hard-filtering, so results are always relevant and never empty. **Area** is the one hard constraint, and it gracefully broadens to its wider region if a neighborhood is too sparse.
 3. **Explain** — Groq (`qwen/qwen3.8-27b`) writes a one-sentence "why this matches" blurb per result, grounded only in that place's real data (no invented details).
 
 The place database is built offline by `scripts/seed.ts`: **fetch from Google Places → LLM-enrich into a controlled vibe/drink vocabulary (`gpt-4o-mini`) → embed → upsert.**
+
+## Evals
+
+Search quality is measured, not eyeballed. A hand-labeled golden set (`evals/dataset.jsonl`) is run through the **exact** production retrieval and ranking code:
+
+| Command | What it answers |
+|---|---|
+| `npm run eval` | Precision@5, Recall@8, MRR, nDCG@8 for the golden set, plus a "never returns empty" invariant |
+| `npm run eval:tune` | Is the ranking bonus (`MATCH_BONUS`) set to the right value? |
+| `npm run eval:tune-candidates` | How many pgvector candidates should be re-ranked? |
+| `npm run eval:judge` | LLM-as-judge grades the generated blurbs: faithful (no invented facts), specific, positive |
+
+Evals need a seeded database and API keys. The labels in `dataset.jsonl` were written against the maintainers' database, so **re-label them against yours** before trusting the numbers — see [evals/README.md](evals/README.md).
 
 ## Tech stack
 
@@ -41,6 +54,8 @@ The place database is built offline by `scripts/seed.ts`: **fetch from Google Pl
 | Seed data | Google Places API |
 
 ## Quick start
+
+**You'll need:** Node.js 18.17+, a PostgreSQL database with the [pgvector](https://github.com/pgvector/pgvector) extension (local or [Supabase](DEPLOY.md)), and API keys for OpenAI, Groq and Google Places. Seeding calls paid APIs, so expect a small cost.
 
 ```bash
 npm install
@@ -72,26 +87,35 @@ src/
 │   ├── page.tsx              # Search UI (query + filters + saved panel)
 │   ├── layout.tsx            # Root layout + fonts
 │   ├── globals.css
-│   └── api/search/route.ts   # The search pipeline (embed → rank → blurb)
+│   └── api/
+│       ├── search/route.ts       # POST /api/search — embed → rank → blurb
+│       └── places/               # "Add a cafe": lookup (Google Places) + add (enrich, embed, insert)
 ├── components/
 │   ├── SearchBar.tsx         # Query input
 │   ├── FilterPanel.tsx       # Area / Vibe / Drinks category filters
 │   ├── ResultsGrid.tsx       # Grid + skeleton loading
 │   ├── PlaceCard.tsx         # Result card (opens Google Maps)
 │   ├── SavedGemsPanel.tsx    # Slide-out saved-gems drawer
+│   ├── GemStoryCard.tsx      # Instagram-story-sized export of saved gems
+│   ├── AddCafeModal.tsx      # Add-a-cafe flow
 │   ├── illustrations.tsx     # SVG placeholders
 │   └── ui/badge.tsx
 ├── lib/
-│   ├── prisma.ts             # Prisma client singleton
+│   ├── search.ts             # Retrieval core: embed + pgvector query + area broadening
+│   ├── ranking.ts            # Pure re-ranking (MATCH_BONUS) — shared with the evals
+│   ├── groq.ts               # Match-blurb generator
 │   ├── openai.ts             # Embeddings + lazy client
 │   ├── enrich.ts             # gpt-4o-mini vibe/drink enrichment
-│   ├── groq.ts               # Match-blurb generator
+│   ├── googlePlaces.ts       # Google Places lookup for add-a-cafe
+│   ├── places.ts             # Insert user-submitted cafes
+│   ├── rateLimit.ts          # In-memory per-IP rate limiter
+│   ├── prisma.ts             # Prisma client singleton
 │   ├── savedGems.ts          # localStorage saved-gems + hook
 │   └── cn.ts                 # Tailwind class merge
 ├── taxonomy.ts               # Controlled vibe / drink / area vocabularies
 └── types.ts
 scripts/seed.ts               # The one seed: fetch → enrich → embed → insert
-evals/                        # Retrieval metrics, ranking tuning, LLM-as-judge blurb grading
+evals/                        # Golden set, retrieval metrics, ranking tuning, LLM-as-judge blurb grading
 prisma/schema.prisma          # Place model with vector(1536)
 ```
 
@@ -110,6 +134,7 @@ A few deliberate choices worth calling out:
 npm run dev                  # Start dev server
 npm run seed                 # Seed / top up the database
 npm run build                # Production build
+npm run typecheck            # tsc --noEmit (the main correctness gate)
 npm run db:studio            # Browse the DB in Prisma Studio
 npm run db:push              # Sync schema to the database
 npm run eval                 # Retrieval/ranking metrics against the golden set
@@ -124,4 +149,4 @@ See **[DEPLOY.md](DEPLOY.md)** for hosting the database on Supabase (free tier) 
 
 ---
 
-Built as an AI-prototyping exercise. See **[CLAUDE.md](CLAUDE.md)** for architecture conventions and gotchas.
+An early-stage side project exploring retrieval, ranking and evals in a small AI product. Issues and feedback are welcome. See **[CLAUDE.md](CLAUDE.md)** for architecture conventions and gotchas.

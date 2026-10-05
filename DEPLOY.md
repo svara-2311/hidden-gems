@@ -1,7 +1,7 @@
 # Deploying the database to Supabase
 
 How to host the `places` database on Supabase (free tier, no credit card) and
-share it with the team. The app itself still runs locally (`npm run dev`) — only
+share it with collaborators. The app itself still runs locally (`npm run dev`) — only
 the Postgres database moves to the cloud.
 
 > **Why Supabase:** the schema uses `pgvector` (`vibe_embedding vector(1536)`),
@@ -80,7 +80,7 @@ Verify:
 ```bash
 psql "$DIRECT_URL" -c \
   "SELECT COUNT(*) total, COUNT(vibe_embedding) with_embedding FROM places;"
-# expect: 546 | 546
+# expect: both numbers equal
 ```
 
 *(Alternative to steps 5 if you'd rather rebuild than copy: `npm run seed` —
@@ -96,7 +96,7 @@ npm run dev
 
 ---
 
-## Sharing with a teammate
+## Sharing with a collaborator
 
 **Browse the data (no setup):** Supabase → **Organization → Team → Invite** by
 email. They get the hosted Table Editor.
@@ -144,7 +144,7 @@ runs automatically via the `postinstall` script.
 5. **Verify** — open the generated `*.vercel.app` URL and run a search.
 
 **Re-deploys are automatic:** every push to `main` triggers a new deployment.
-To share, send your co-founder the `*.vercel.app` link — no local setup needed.
+To share, send people the `*.vercel.app` link — no local setup needed.
 
 > **Note on the free Supabase pause:** if the Supabase project has been idle and
 > paused, the first request from Vercel will fail until you resume it in the

@@ -9,7 +9,7 @@ what the eval scores is what users get.
 
 | Layer | What it checks | Command |
 |---|---|---|
-| **Retrieval / ranking** | Do the right cafes come back, in a good order? Precision@5, Recall@10, MRR, nDCG@10 | `npm run eval` |
+| **Retrieval / ranking** | Do the right cafes come back, in a good order? Precision@5, Recall@8, MRR, nDCG@8 (8 = results shown per search) | `npm run eval` |
 | **Parameter tuning** | Is `MATCH_BONUS` (ranking.ts) set to the right value? | `npm run eval:tune` |
 | **Generation** | Are the Groq blurbs faithful (no invented facts), specific (no "great ambiance"), and positive (a recommendation, never a put-down)? | `npm run eval:judge` |
 | **Invariants** | Every query returns ≥1 result; area broadening fires when sparse | folded into `npm run eval` |
@@ -39,8 +39,10 @@ One JSON object per line:
 
 ### Labeling against YOUR database (do this first)
 
-The shipped `relevant` lists are **plausible placeholders** — your seed may not
-contain those exact cafes. Fix them once:
+The shipped `relevant` lists were labeled against the maintainers' database, so
+**your seed may not contain those exact cafes**. Cases with an empty `relevant`
+list (currently 10 of the 24) are unlabeled: they're reported as such and
+skipped from the aggregate numbers until you fill them in. Re-label once:
 
 ```bash
 LABEL=1 npm run eval
@@ -62,15 +64,15 @@ metrics are too noisy to trust a change.
 ## Interpreting the output
 
 - **Precision@5** — of the top 5, how many were relevant. The number a user feels.
-- **Recall@10** — of the cafes that should have shown up, how many did (top 10).
+- **Recall@8** — of the cafes that should have shown up, how many did (the 8 a user sees).
 - **MRR** — how high the *first* good result lands (1.0 = always rank 1).
-- **nDCG@10** — order-aware overall quality; the headline metric for tuning.
+- **nDCG@8** — order-aware overall quality; the headline metric for tuning.
 - **Never-empty** — must be N/N. A miss means the broadening logic regressed.
 
 ## Tuning `MATCH_BONUS`
 
 `npm run eval:tune` retrieves each case's candidates once, then re-ranks that
-fixed set at several bonus values and reports mean nDCG@10 / P@5 per value. Use
+fixed set at several bonus values and reports mean nDCG@8 / P@5 per value. Use
 it to justify the constant instead of guessing:
 
 ```bash
@@ -79,6 +81,9 @@ BONUSES=0,0.02,0.04,0.08,0.15 npm run eval:tune
 
 If a different value wins clearly *and repeatably on a large enough set*, change
 `DEFAULT_MATCH_BONUS` in `src/lib/ranking.ts`.
+
+`npm run eval:tune-candidates` does the same for how many pgvector candidates
+get re-ranked (`CANDIDATE_LIMIT`).
 
 ## What this is not
 

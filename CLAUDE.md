@@ -55,7 +55,9 @@ npm run build        # production build (run before deploying)
 npm run seed         # (re)seed the database — costs API calls
 npm run db:push      # sync prisma schema → database
 npm run db:studio    # browse the DB
-npx tsc --noEmit     # typecheck (there's no configured ESLint)
+npm run typecheck    # tsc --noEmit (there's no configured ESLint)
+npm run eval         # retrieval/ranking metrics vs evals/dataset.jsonl
+npm run eval:judge   # LLM-as-judge grading of blurbs (faithful/specific/positive)
 ```
 
 ## Gotchas
